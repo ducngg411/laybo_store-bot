@@ -4,7 +4,7 @@ import { logger } from '../shared/logger';
 import { CALLBACK_ACTIONS, BOT_COMMANDS } from '../shared/constants';
 
 // Import handlers
-import { handleStart, handleSupport } from './handlers/start.handler';
+import { handleStart, handleSupport, handleRefreshInventory } from './handlers/start.handler';
 import {
     handleCanvaSelect,
     handleCanvaPlanSelect,
@@ -39,6 +39,7 @@ export function createBot(): Telegraf {
     bot.action(CALLBACK_ACTIONS.SELECT_CANVA, handleCanvaSelect);
     bot.action(CALLBACK_ACTIONS.SELECT_NETFLIX, handleNetflixSelect);
     bot.action(CALLBACK_ACTIONS.SUPPORT, handleSupport);
+    bot.action(CALLBACK_ACTIONS.REFRESH_INVENTORY, handleRefreshInventory);
 
     // Canva flow callbacks
     bot.action(new RegExp(`^${CALLBACK_ACTIONS.CANVA_PLAN_PREFIX}(.+)$`), (ctx) => {

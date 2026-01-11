@@ -40,6 +40,7 @@ export const CALLBACK_ACTIONS = {
     SELECT_CANVA: 'select_canva',
     SELECT_NETFLIX: 'select_netflix',
     SUPPORT: 'support',
+    REFRESH_INVENTORY: 'refresh_inventory',
 
     // Canva flow
     CANVA_PLAN_PREFIX: 'canva_plan_',

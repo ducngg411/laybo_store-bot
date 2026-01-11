@@ -26,10 +26,8 @@ export async function handleStart(ctx: Context) {
             ),
         ],
         [
-            Markup.button.callback(
-                '☎️ Hỗ trợ',
-                CALLBACK_ACTIONS.SUPPORT
-            ),
+            Markup.button.callback('🔄 Cập nhật kho hàng', CALLBACK_ACTIONS.REFRESH_INVENTORY),
+            Markup.button.callback('☎️ Hỗ trợ', CALLBACK_ACTIONS.SUPPORT),
         ],
     ]);
 
@@ -41,4 +39,40 @@ export async function handleStart(ctx: Context) {
 
 export async function handleSupport(ctx: Context) {
     await ctx.reply(BOT_MESSAGES.SUPPORT, { parse_mode: 'Markdown' });
+}
+
+export async function handleRefreshInventory(ctx: Context) {
+    // Get Netflix product to check inventory
+    const netflixProduct = await productRepository.findByCode(PRODUCT_CODES.NETFLIX);
+    let netflixCount = 0;
+    if (netflixProduct && netflixProduct.type === ProductType.DIGITAL_GOOD) {
+        netflixCount = await inventoryRepository.countAvailable(netflixProduct.id);
+    }
+
+    const keyboard = Markup.inlineKeyboard([
+        [
+            Markup.button.callback(
+                '🔵 NÂNG CẤP CANVA PRO TEAMS CHÍNH CHỦ',
+                CALLBACK_ACTIONS.SELECT_CANVA
+            ),
+        ],
+        [
+            Markup.button.callback(
+                `🎬 TÀI KHOẢN NETFLIX PREMIUM 4K${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
+                CALLBACK_ACTIONS.SELECT_NETFLIX
+            ),
+        ],
+        [
+            Markup.button.callback('🔄 Cập nhật kho hàng', CALLBACK_ACTIONS.REFRESH_INVENTORY),
+            Markup.button.callback('☎️ Hỗ trợ', CALLBACK_ACTIONS.SUPPORT),
+        ],
+    ]);
+
+    await ctx.answerCbQuery('✅ Đã cập nhật!');
+    await ctx.editMessageText(
+        `🏪 *LayBo Store - Kho hàng*\n\n` +
+        `🎬 Netflix: ${netflixCount > 0 ? `*${netflixCount} tài khoản*` : '*Hết hàng*'}\n\n` +
+        `Chọn dịch vụ bạn muốn mua:`,
+        { parse_mode: 'Markdown', ...keyboard }
+    );
 }
