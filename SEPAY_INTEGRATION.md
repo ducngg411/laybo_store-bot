@@ -42,38 +42,62 @@ Hướng dẫn tích hợp SePay webhook cho LayBo Store Bot.
 
 Bot tự động extract mã đơn hàng theo thứ tự ưu tiên:
 
+### ⚠️ Known Issue: `code` field is often NULL
+
+SePay webhook thường gửi `code: null`, ngay cả khi content chứa mã đơn hàng.
+
+**Example from real webhook:**
+```json
+{
+  "code": null,  // ← Thường là null
+  "content": "ORDHHKVWELJ FT26012916846798..."  // ← Mã đơn ở đây
+}
+```
+
+Bot đã được update để xử lý trường hợp này.
+
 ### 1. Field `code` (highest priority)
 
 ```json
 {
-  "code": "ORD_ABC12345"
+  "code": "ORDHHKVWELJ"  // Nếu có (hiếm khi)
 }
 ```
 
-### 2. Regex từ `content`
+**Note:** Field này thường là `null` trong thực tế.
+
+### 2. Regex từ `content` ⭐ (primary method)
 
 ```json
 {
-  "content": "Thanh toan ORD_ABC12345 FT25296041079708"
+  "content": "ORDHHKVWELJ FT25296041079708"
 }
 ```
 
-**Pattern:** `/ORD_[A-Z0-9]{8,}/`
+**Pattern:** `/ORD[_]?[A-Z0-9]{7,}/`
+
+**Supports both formats:**
+- ✅ `ORDHHKVWELJ` (no underscore - actual format)
+- ✅ `ORD_ABC12345` (with underscore - legacy)
 
 Ví dụ matches:
+- ✅ `ORDHHKVWELJ` 
 - ✅ `ORD_ABC12345`
 - ✅ `ORD_XYZ98765`
-- ✅ `Thanh toan ORD_TEST1234 something`
-- ❌ `ORD_ABC` (quá ngắn)
-- ❌ `ORDER_123` (sai format)
+- ✅ `Thanh toan ORDTEST1234 something`
+- ✅ `ORDABC123 FT123456` (minimum 7 chars after ORD)
+- ❌ `ORDABC` (quá ngắn, < 7 chars)
+- ❌ `ORDER_123` (sai format, phải bắt đầu bằng ORD)
 
 ### 3. Regex từ `description` (fallback)
 
 ```json
 {
-  "description": "Payment for ORD_ABC12345"
+  "description": "Payment for ORDHHKVWELJ"
 }
 ```
+
+Same pattern as content field.
 
 ---
 

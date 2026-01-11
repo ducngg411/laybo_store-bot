@@ -2,22 +2,28 @@
 
 /**
  * Script to test SePay webhook locally
- * Usage: node test-webhook.js <orderId> <amount>
+ * Usage: 
+ *   node test-webhook.js <orderId> <amount> [--null-code]
+ * 
+ * Examples:
+ *   node test-webhook.js ORDHHKVWELJ 140000
+ *   node test-webhook.js ORDHHKVWELJ 140000 --null-code  (test with code=null)
  */
 
 const http = require('http');
 
-const orderId = process.argv[2] || 'ORD_TEST1234';
+const orderId = process.argv[2] || 'ORDHHKVWELJ';
 const amount = parseInt(process.argv[3] || '140000', 10);
+const testCodeNull = process.argv[4] === '--null-code'; // Test with code=null
 
 // SePay webhook format (based on real implementation)
 const payload = {
   id: `TXN_${Date.now()}`, // Transaction ID
   referenceCode: `REF_${Date.now()}`, // Alternative transaction ID
   transferAmount: amount, // Số tiền chuyển
-  content: `Thanh toan ${orderId} FT${Date.now()}`, // Nội dung chuyển khoản
+  content: `${orderId} FT${Date.now()}`, // Nội dung chuyển khoản (order code ở đầu)
   description: `Payment for order ${orderId}`, // Mô tả
-  code: orderId, // Mã đơn hàng
+  code: testCodeNull ? null : orderId, // Mã đơn hàng (có thể null như SePay thực tế)
   gateway: 'MB', // Ngân hàng (MB, VCB, TCB, etc.)
   transactionDate: new Date().toISOString(), // Ngày giao dịch
   transferType: 'in', // 'in' = tiền vào, 'out' = tiền ra

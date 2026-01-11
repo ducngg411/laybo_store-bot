@@ -49,10 +49,18 @@ export function createServer(bot: Telegraf): FastifyInstance {
             const processed = await paymentService.processWebhook(payload);
 
             if (processed) {
-                // Extract payment reference from webhook (same logic as payment service)
-                const content = payload.content || payload.description || '';
-                const match = content.match(/ORD[A-Z0-9]{8,}/); // No underscore
-                const paymentRef = payload.code || (match ? match[0] : null);
+                // Extract payment reference using same logic as payment service
+                let paymentRef = payload.code?.trim() || null;
+
+                if (!paymentRef && payload.content) {
+                    const match = payload.content.match(/ORD[_]?[A-Z0-9]{7,}/);
+                    paymentRef = match ? match[0] : null;
+                }
+
+                if (!paymentRef && payload.description) {
+                    const match = payload.description.match(/ORD[_]?[A-Z0-9]{7,}/);
+                    paymentRef = match ? match[0] : null;
+                }
 
                 if (paymentRef) {
                     const order = await orderService.getOrder(paymentRef);

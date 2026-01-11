@@ -50,24 +50,54 @@ export class PaymentService {
 
     /**
      * Extract payment reference from webhook payload
-     * Format: ORDXXXXXXXX (no underscore)
+     * Handles both formats: ORD_XXXXXXXX and ORDXXXXXXXX
+     * 
+     * Priority:
+     * 1. payload.code (if not null)
+     * 2. Regex from content field
+     * 3. Regex from description field
      */
     private extractPaymentRef(payload: SepayWebhookPayload): string | null {
-        // Priority 1: Explicit code field
-        if (payload.code) {
-            return payload.code;
+        // Priority 1: Explicit code field (if not null/empty)
+        if (payload.code && payload.code.trim().length > 0) {
+            logger.debug({ code: payload.code }, 'Using code field from webhook');
+            return payload.code.trim();
         }
 
-        // Priority 2: Extract from content or description
-        const content = payload.content || payload.description || '';
-
-        // Match pattern: ORDXXXXXXXX (at least 8 chars after ORD)
-        const match = content.match(/ORD[A-Z0-9]{8,}/);
-        if (match) {
-            return match[0];
+        // Priority 2: Extract from content field
+        if (payload.content) {
+            // Match pattern: ORD followed by alphanumeric (at least 8 chars total)
+            // Supports both ORD_ABC12345 and ORDABC12345 formats
+            const match = payload.content.match(/ORD[_]?[A-Z0-9]{7,}/);
+            if (match) {
+                logger.debug(
+                    { content: payload.content, extracted: match[0] },
+                    'Extracted payment ref from content field'
+                );
+                return match[0];
+            }
         }
 
-        logger.warn({ payload }, 'Could not extract payment reference from SePay webhook');
+        // Priority 3: Extract from description field (fallback)
+        if (payload.description) {
+            const match = payload.description.match(/ORD[_]?[A-Z0-9]{7,}/);
+            if (match) {
+                logger.debug(
+                    { description: payload.description, extracted: match[0] },
+                    'Extracted payment ref from description field'
+                );
+                return match[0];
+            }
+        }
+
+        logger.warn(
+            {
+                code: payload.code,
+                content: payload.content,
+                description: payload.description
+            },
+            'Could not extract payment reference from SePay webhook'
+        );
         return null;
     }
 
