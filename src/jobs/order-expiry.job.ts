@@ -1,14 +1,12 @@
 import { orderService } from '../services/order.service';
 import { logger } from '../shared/logger';
 import { Telegraf } from 'telegraf';
-import { notifyUserOrderExpired } from '../bot/handlers/order.handler';
 
 export class OrderExpiryJob {
     private intervalId?: NodeJS.Timeout;
-    private bot: Telegraf;
 
-    constructor(bot: Telegraf) {
-        this.bot = bot;
+    constructor(_bot: Telegraf) {
+        // Bot parameter kept for future use
     }
 
     start() {

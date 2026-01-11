@@ -1,5 +1,5 @@
 import { prisma } from '../client';
-import { Product, Variant, Prisma } from '@prisma/client';
+import { Product, Variant } from '@prisma/client';
 
 export class ProductRepository {
     async findByCode(code: string): Promise<Product | null> {

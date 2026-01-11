@@ -1,5 +1,5 @@
 import { Context, Markup, Telegraf } from 'telegraf';
-import { OrderStatus, ProductType } from '@prisma/client';
+import { OrderStatus } from '@prisma/client';
 import { orderService } from '../../services/order.service';
 import { inventoryService } from '../../services/inventory.service';
 import { paymentService } from '../../services/payment.service';
