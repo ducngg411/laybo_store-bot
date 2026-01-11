@@ -93,6 +93,11 @@ export class OrderService {
                 expiresAt,
             });
 
+            // After order is created, update reserved items with orderId
+            if (reservedItemIds.length > 0) {
+                await inventoryRepository.updateOrderId(reservedItemIds, orderId);
+            }
+
             logger.info({ orderId: order.id, userId, productCode }, 'Order created');
 
             return {

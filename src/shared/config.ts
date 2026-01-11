@@ -13,7 +13,7 @@ const envSchema = z.object({
     SEPAY_BANK_CODE: z.string().default('MB'),
     SEPAY_TEMPLATE: z.string().default('compact'),
     BASE_URL: z.string().url().optional(),
-    ORDER_EXPIRE_MINUTES: z.string().default('15'),
+    ORDER_EXPIRE_MINUTES: z.string().default('2'),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     PORT: z.string().default('3000'),
 });

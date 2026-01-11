@@ -19,9 +19,34 @@ export async function handleCancelOrder(ctx: Context) {
             return;
         }
 
+        // Cancel order (update status + release inventory)
         await orderService.cancelOrder(activeOrder.id);
-        await ctx.answerCbQuery('Đơn hàng đã được huỷ.');
-        await ctx.editMessageText(BOT_MESSAGES.ORDER_CANCELLED);
+
+        // Answer callback query
+        await ctx.answerCbQuery('Đã huỷ đơn hàng');
+
+        // Step 1: Edit old message to show cancelled status and remove keyboard
+        try {
+            // Try editing message caption (for photo messages with QR)
+            await ctx.editMessageCaption(BOT_MESSAGES.ORDER_CANCELLED_MESSAGE, {
+                parse_mode: 'Markdown',
+            });
+        } catch (error) {
+            // If that fails, try editing message text (for text-only messages)
+            try {
+                await ctx.editMessageText(BOT_MESSAGES.ORDER_CANCELLED_MESSAGE, {
+                    parse_mode: 'Markdown',
+                });
+            } catch (error2) {
+                // If both fail, just log it - message editing is not critical
+                logger.debug({ error: error2 }, 'Could not edit message (caption or text)');
+            }
+        }
+
+        // Step 2: Send new confirmation message
+        await ctx.reply(BOT_MESSAGES.ORDER_CANCELLED_CONFIRMATION, {
+            parse_mode: 'Markdown',
+        });
 
         logger.info({ orderId: activeOrder.id, userId }, 'Order cancelled by user');
     } catch (error) {

@@ -67,13 +67,18 @@ export const CALLBACK_ACTIONS = {
 } as const;
 
 export const BOT_MESSAGES = {
-    WELCOME: '🎉 *Chào mừng bạn đến với LayBo Store!*\n\nVui lòng chọn dịch vụ:',
+    WELCOME: '🎉 *Chào mừng bạn đến với LayBo Store!*\n\nBạn muốn mua gì hôm nay?',
     SUPPORT: '💬 *Hỗ trợ*\n\nNếu bạn cần hỗ trợ, vui lòng liên hệ admin: @ducngg411',
 
     ORDER_EXISTS: (orderId: string, status: string) =>
         `⚠️ Bạn đang có đơn hàng *#${orderId}* với trạng thái *${status}*.\n\nVui lòng hoàn tất hoặc huỷ đơn hiện tại trước khi tạo đơn mới.`,
 
-    ORDER_CANCELLED: 'Đơn hàng đã được huỷ thành công.',
+    ORDER_CANCELLED_MESSAGE: '❌ *Đơn hàng này đã bị huỷ*',
+    ORDER_CANCELLED_CONFIRMATION:
+        '✅ *Huỷ đơn thành công!*\n\n' +
+        'Bạn có thể tạo đơn mới bất cứ lúc nào.\n\n' +
+        '👉 Gõ /start để mua lại\n' +
+        '📩 Cần hỗ trợ? Liên hệ admin @ducngg411',
     ORDER_EXPIRED: (orderId: string) =>
         `⏰ Đơn hàng *#${orderId}* đã hết hạn thanh toán.\n\nVui lòng tạo đơn mới nếu bạn vẫn muốn mua.`,
 

@@ -7,7 +7,6 @@ import { logger } from '../../shared/logger';
 import {
     CALLBACK_ACTIONS,
     PRODUCT_CODES,
-    BOT_MESSAGES,
     LIMITS,
 } from '../../shared/constants';
 import { formatCurrency } from '../../shared/utils';

@@ -54,6 +54,18 @@ export class InventoryRepository {
         });
     }
 
+    async updateOrderId(itemIds: string[], orderId: string): Promise<Prisma.BatchPayload> {
+        return prisma.inventoryItem.updateMany({
+            where: {
+                id: { in: itemIds },
+                status: InventoryStatus.RESERVED,
+            },
+            data: {
+                orderId,
+            },
+        });
+    }
+
     async findByOrder(orderId: string): Promise<InventoryItem[]> {
         return prisma.inventoryItem.findMany({
             where: { orderId },
