@@ -1,0 +1,237 @@
+import { Context, Markup } from 'telegraf';
+import { OrderStatus } from '@prisma/client';
+import { orderService } from '../../services/order.service';
+import { productRepository, variantRepository } from '../../db/repositories/product.repository';
+import { inventoryService } from '../../services/inventory.service';
+import { paymentService } from '../../services/payment.service';
+import { logger } from '../../shared/logger';
+import {
+    CALLBACK_ACTIONS,
+    PRODUCT_CODES,
+    BOT_MESSAGES,
+    LIMITS,
+} from '../../shared/constants';
+import { validateEmailList } from '../../shared/validators';
+import { formatCurrency } from '../../shared/utils';
+
+// Session state for Canva flow
+interface CanvaSession {
+    step: 'select_plan' | 'input_quantity' | 'input_emails';
+    variantCode?: string;
+    variantName?: string;
+    unitPrice?: number;
+    quantity?: number;
+}
+
+const userSessions = new Map<number, CanvaSession>();
+
+export async function handleCanvaSelect(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    // Check for active order
+    const activeOrder = await orderService.getActiveOrder(BigInt(userId));
+    if (activeOrder) {
+        const keyboard = Markup.inlineKeyboard([
+            [Markup.button.callback('👁️ Xem QR', CALLBACK_ACTIONS.VIEW_QR)],
+            [Markup.button.callback('❌ Huỷ đơn', CALLBACK_ACTIONS.CANCEL_ORDER)],
+        ]);
+
+        await ctx.reply(BOT_MESSAGES.ORDER_EXISTS(activeOrder.id, activeOrder.status), {
+            parse_mode: 'Markdown',
+            ...keyboard,
+        });
+        return;
+    }
+
+    // Show plan selection
+    const product = await productRepository.findByCode(PRODUCT_CODES.CANVA);
+    if (!product) {
+        await ctx.reply('❌ Sản phẩm không khả dụng.');
+        return;
+    }
+
+    const variants = await variantRepository.findByProduct(product.id);
+    const buttons = variants.map((v) =>
+        Markup.button.callback(
+            `${v.name} - ${formatCurrency(v.priceVnd)}`,
+            `${CALLBACK_ACTIONS.CANVA_PLAN_PREFIX}${v.code}`
+        )
+    );
+
+    const keyboard = Markup.inlineKeyboard(buttons, { columns: 1 });
+
+    userSessions.set(userId, { step: 'select_plan' });
+
+    await ctx.reply('📦 *Nâng cấp Canva Pro*\n\nVui lòng chọn gói:', {
+        parse_mode: 'Markdown',
+        ...keyboard,
+    });
+}
+
+export async function handleCanvaPlanSelect(ctx: Context, variantCode: string) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const variant = await variantRepository.findByCode(variantCode);
+    if (!variant) {
+        await ctx.reply('❌ Gói không hợp lệ.');
+        return;
+    }
+
+    // Update session
+    userSessions.set(userId, {
+        step: 'input_quantity',
+        variantCode: variant.code,
+        variantName: variant.name,
+        unitPrice: variant.priceVnd,
+    });
+
+    // Show quantity selection
+    const keyboard = Markup.inlineKeyboard([
+        [
+            Markup.button.callback('1', `${CALLBACK_ACTIONS.CANVA_QTY_PREFIX}1`),
+            Markup.button.callback('2', `${CALLBACK_ACTIONS.CANVA_QTY_PREFIX}2`),
+            Markup.button.callback('3', `${CALLBACK_ACTIONS.CANVA_QTY_PREFIX}3`),
+        ],
+        [
+            Markup.button.callback('4', `${CALLBACK_ACTIONS.CANVA_QTY_PREFIX}4`),
+            Markup.button.callback('5', `${CALLBACK_ACTIONS.CANVA_QTY_PREFIX}5`),
+        ],
+        [Markup.button.callback('✏️ Nhập số khác', CALLBACK_ACTIONS.CANVA_QTY_CUSTOM)],
+    ]);
+
+    await ctx.editMessageText(
+        `✅ Đã chọn: *${variant.name}* - ${formatCurrency(variant.priceVnd)}/email\n\n` +
+        `💬 Bạn cần nâng cấp bao nhiêu email?`,
+        {
+            parse_mode: 'Markdown',
+            ...keyboard,
+        }
+    );
+}
+
+export async function handleCanvaQuantitySelect(ctx: Context, quantity: number) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const session = userSessions.get(userId);
+    if (!session || session.step !== 'input_quantity') {
+        await ctx.reply('❌ Phiên làm việc không hợp lệ. Vui lòng bắt đầu lại từ /start');
+        return;
+    }
+
+    // Update session
+    session.quantity = quantity;
+    session.step = 'input_emails';
+    userSessions.set(userId, session);
+
+    const totalPrice = (session.unitPrice || 0) * quantity;
+
+    await ctx.editMessageText(
+        `✅ Gói: *${session.variantName}*\n` +
+        `✅ Số lượng: *${quantity} email*\n` +
+        `💰 Tổng: *${formatCurrency(totalPrice)}*\n\n` +
+        `📧 Vui lòng gửi danh sách email (mỗi email 1 dòng):\n\n` +
+        `*Ví dụ:*\n` +
+        `\`\`\`\n` +
+        `email1@gmail.com\n` +
+        `email2@gmail.com\n` +
+        `\`\`\``,
+        { parse_mode: 'Markdown' }
+    );
+}
+
+export async function handleCanvaQuantityCustom(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const session = userSessions.get(userId);
+    if (!session || session.step !== 'input_quantity') {
+        await ctx.reply('❌ Phiên làm việc không hợp lệ. Vui lòng bắt đầu lại từ /start');
+        return;
+    }
+
+    await ctx.editMessageText(
+        `📝 Vui lòng nhập số lượng email cần nâng cấp (${LIMITS.EMAIL_MIN}-${LIMITS.EMAIL_MAX}):`,
+        { parse_mode: 'Markdown' }
+    );
+}
+
+export async function handleCanvaEmailInput(ctx: Context, text: string) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const session = userSessions.get(userId);
+    if (!session || session.step !== 'input_emails') {
+        // Check if user is inputting custom quantity
+        if (session?.step === 'input_quantity') {
+            const qty = parseInt(text, 10);
+            if (isNaN(qty) || qty < LIMITS.EMAIL_MIN || qty > LIMITS.EMAIL_MAX) {
+                await ctx.reply(
+                    `❌ Số lượng không hợp lệ. Vui lòng nhập số từ ${LIMITS.EMAIL_MIN} đến ${LIMITS.EMAIL_MAX}.`
+                );
+                return;
+            }
+            await handleCanvaQuantitySelect(ctx, qty);
+        }
+        return;
+    }
+
+    const quantity = session.quantity!;
+
+    // Validate emails
+    try {
+        const emails = validateEmailList(text, quantity);
+
+        // Create order
+        const order = await orderService.createOrder({
+            userId: BigInt(userId),
+            username: ctx.from?.username,
+            productCode: PRODUCT_CODES.CANVA,
+            variantCode: session.variantCode,
+            quantity,
+            metadata: { emails },
+        });
+
+        // Clear session
+        userSessions.delete(userId);
+
+        // Generate QR
+        const qrUrl = await paymentService.generateQRCode(order.paymentRef, order.totalVnd);
+
+        const expiryMinutes = Math.floor(
+            (order.expiresAt!.getTime() - Date.now()) / 1000 / 60
+        );
+
+        const keyboard = Markup.inlineKeyboard([
+            [Markup.button.callback('❌ Huỷ đơn', CALLBACK_ACTIONS.CANCEL_ORDER)],
+            [Markup.button.callback('✅ Tôi đã thanh toán', CALLBACK_ACTIONS.CONFIRM_PAYMENT)],
+        ]);
+
+        await ctx.replyWithPhoto(
+            { url: qrUrl },
+            {
+                caption:
+                    `🧾 *Đơn hàng #${order.id}*\n\n` +
+                    `📦 Sản phẩm: ${order.productName} - ${order.variantName}\n` +
+                    `📧 Số email: ${order.quantity}\n` +
+                    `💰 Tổng tiền: *${formatCurrency(order.totalVnd)}*\n` +
+                    `🔖 Mã đơn: \`${order.paymentRef}\`\n` +
+                    `⏰ Hết hạn sau: ${expiryMinutes} phút\n\n` +
+                    `📱 Quét mã QR để thanh toán`,
+                parse_mode: 'Markdown',
+                ...keyboard,
+            }
+        );
+
+        logger.info({ orderId: order.id, userId }, 'Canva order created, QR sent');
+    } catch (error) {
+        if (error instanceof Error) {
+            await ctx.reply(`❌ ${error.message}\n\nVui lòng gửi lại danh sách email.`);
+        } else {
+            logger.error({ error }, 'Failed to process email input');
+            await ctx.reply('❌ Đã xảy ra lỗi. Vui lòng thử lại sau.');
+        }
+    }
+}

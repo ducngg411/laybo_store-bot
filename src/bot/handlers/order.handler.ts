@@ -1,0 +1,253 @@
+import { Context, Markup, Telegraf } from 'telegraf';
+import { OrderStatus, ProductType } from '@prisma/client';
+import { orderService } from '../../services/order.service';
+import { inventoryService } from '../../services/inventory.service';
+import { paymentService } from '../../services/payment.service';
+import { logger } from '../../shared/logger';
+import { config } from '../../shared/config';
+import { BOT_MESSAGES, CALLBACK_ACTIONS } from '../../shared/constants';
+import { formatCurrency } from '../../shared/utils';
+
+export async function handleCancelOrder(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    try {
+        const activeOrder = await orderService.getActiveOrder(BigInt(userId));
+        if (!activeOrder) {
+            await ctx.answerCbQuery('Không tìm thấy đơn hàng.');
+            return;
+        }
+
+        await orderService.cancelOrder(activeOrder.id);
+        await ctx.answerCbQuery('Đơn hàng đã được huỷ.');
+        await ctx.editMessageText(BOT_MESSAGES.ORDER_CANCELLED);
+
+        logger.info({ orderId: activeOrder.id, userId }, 'Order cancelled by user');
+    } catch (error) {
+        logger.error({ error }, 'Failed to cancel order');
+        await ctx.answerCbQuery('Không thể huỷ đơn hàng.');
+    }
+}
+
+export async function handleViewQR(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    try {
+        const activeOrder = await orderService.getActiveOrder(BigInt(userId));
+        if (!activeOrder) {
+            await ctx.answerCbQuery('Không tìm thấy đơn hàng.');
+            return;
+        }
+
+        if (activeOrder.status !== OrderStatus.PENDING_PAYMENT) {
+            await ctx.answerCbQuery('Đơn hàng không ở trạng thái chờ thanh toán.');
+            return;
+        }
+
+        const qrUrl = await paymentService.generateQRCode(
+            activeOrder.paymentRef,
+            activeOrder.totalVnd
+        );
+
+        const expiryMinutes = Math.floor(
+            (activeOrder.expiresAt!.getTime() - Date.now()) / 1000 / 60
+        );
+
+        const keyboard = Markup.inlineKeyboard([
+            [Markup.button.callback('❌ Huỷ đơn', CALLBACK_ACTIONS.CANCEL_ORDER)],
+            [Markup.button.callback('✅ Tôi đã thanh toán', CALLBACK_ACTIONS.CONFIRM_PAYMENT)],
+        ]);
+
+        await ctx.replyWithPhoto(
+            { url: qrUrl },
+            {
+                caption:
+                    `🧾 *Đơn hàng #${activeOrder.id}*\n\n` +
+                    `📦 Sản phẩm: ${activeOrder.productName} - ${activeOrder.variantName}\n` +
+                    `💰 Tổng tiền: *${formatCurrency(activeOrder.totalVnd)}*\n` +
+                    `🔖 Mã đơn: \`${activeOrder.paymentRef}\`\n` +
+                    `⏰ Hết hạn sau: ${expiryMinutes} phút\n\n` +
+                    `📱 Quét mã QR để thanh toán`,
+                parse_mode: 'Markdown',
+                ...keyboard,
+            }
+        );
+
+        await ctx.answerCbQuery();
+    } catch (error) {
+        logger.error({ error }, 'Failed to show QR');
+        await ctx.answerCbQuery('Đã xảy ra lỗi.');
+    }
+}
+
+export async function handleConfirmPayment(ctx: Context) {
+    await ctx.answerCbQuery(
+        '⏳ Vui lòng đợi hệ thống xác nhận thanh toán tự động. Thường mất 1-2 phút.'
+    );
+}
+
+export async function notifyUserOrderExpired(bot: Telegraf, userId: bigint, orderId: string) {
+    try {
+        await bot.telegram.sendMessage(
+            userId.toString(),
+            BOT_MESSAGES.ORDER_EXPIRED(orderId),
+            { parse_mode: 'Markdown' }
+        );
+    } catch (error) {
+        logger.error({ error, userId, orderId }, 'Failed to notify user about expired order');
+    }
+}
+
+export async function notifyUserPaymentSuccess(bot: Telegraf, userId: bigint, orderId: string) {
+    try {
+        await bot.telegram.sendMessage(userId.toString(), BOT_MESSAGES.PAYMENT_SUCCESS, {
+            parse_mode: 'Markdown',
+        });
+        logger.info({ userId, orderId }, 'Payment success notification sent');
+    } catch (error) {
+        logger.error({ error, userId, orderId }, 'Failed to send payment success notification');
+    }
+}
+
+export async function notifyAdminNewOrder(bot: Telegraf, order: any) {
+    try {
+        const metadata = order.metadata as any;
+        let message = `🆕 *Đơn hàng mới #${order.id}*\n\n`;
+        message += `👤 User: ${order.username ? '@' + order.username : order.userId}\n`;
+        message += `📦 Sản phẩm: ${order.productName}`;
+        if (order.variantName) message += ` - ${order.variantName}`;
+        message += `\n`;
+        message += `🔢 Số lượng: ${order.quantity}\n`;
+        message += `💰 Tổng tiền: *${formatCurrency(order.totalVnd)}*\n`;
+        message += `🔖 Mã đơn: \`${order.paymentRef}\`\n`;
+        message += `📅 Thời gian: ${order.createdAt.toLocaleString('vi-VN')}\n`;
+
+        if (metadata?.emails) {
+            message += `\n📧 *Danh sách email:*\n`;
+            metadata.emails.forEach((email: string, idx: number) => {
+                message += `${idx + 1}. \`${email}\`\n`;
+            });
+        }
+
+        const keyboard = Markup.inlineKeyboard([
+            [
+                Markup.button.callback(
+                    '🔄 Đang xử lý',
+                    `${CALLBACK_ACTIONS.ADMIN_IN_PROGRESS}${order.id}`
+                ),
+            ],
+            [
+                Markup.button.callback(
+                    '✅ Hoàn thành',
+                    `${CALLBACK_ACTIONS.ADMIN_FULFILLED}${order.id}`
+                ),
+                Markup.button.callback('❌ Thất bại', `${CALLBACK_ACTIONS.ADMIN_FAILED}${order.id}`),
+            ],
+        ]);
+
+        await bot.telegram.sendMessage(config.bot.adminChatId, message, {
+            parse_mode: 'Markdown',
+            ...keyboard,
+        });
+
+        logger.info({ orderId: order.id }, 'Admin notification sent');
+    } catch (error) {
+        logger.error({ error, orderId: order.id }, 'Failed to send admin notification');
+    }
+}
+
+export async function deliverNetflixAccounts(bot: Telegraf, userId: bigint, orderId: string) {
+    try {
+        const items = await inventoryService.getOrderItems(orderId);
+
+        if (items.length === 0) {
+            logger.error({ orderId }, 'No inventory items found for Netflix order');
+            return;
+        }
+
+        const accounts = items.map((item) => inventoryService.parseItemPayload(item));
+
+        await bot.telegram.sendMessage(
+            userId.toString(),
+            BOT_MESSAGES.NETFLIX_DELIVERED(accounts),
+            { parse_mode: 'Markdown' }
+        );
+
+        logger.info({ userId, orderId, count: accounts.length }, 'Netflix accounts delivered');
+    } catch (error) {
+        logger.error({ error, userId, orderId }, 'Failed to deliver Netflix accounts');
+    }
+}
+
+export async function handleAdminInProgress(ctx: Context, orderId: string) {
+    try {
+        await orderService.updateOrderStatus(orderId, OrderStatus.IN_PROGRESS);
+        await ctx.answerCbQuery('✅ Đã cập nhật trạng thái: Đang xử lý');
+        await ctx.editMessageReplyMarkup(undefined);
+        logger.info({ orderId }, 'Order marked as IN_PROGRESS by admin');
+    } catch (error) {
+        logger.error({ error, orderId }, 'Failed to update order status');
+        await ctx.answerCbQuery('❌ Không thể cập nhật trạng thái');
+    }
+}
+
+export async function handleAdminFulfilled(ctx: Context, bot: Telegraf, orderId: string) {
+    try {
+        const order = await orderService.getOrder(orderId);
+        if (!order) {
+            await ctx.answerCbQuery('Không tìm thấy đơn hàng');
+            return;
+        }
+
+        await orderService.updateOrderStatus(orderId, OrderStatus.FULFILLED);
+
+        // Send notification to user based on product type
+        const metadata = order.metadata as any;
+
+        if (metadata?.emails) {
+            // Canva order
+            await bot.telegram.sendMessage(
+                order.userId.toString(),
+                BOT_MESSAGES.ORDER_FULFILLED(metadata.emails),
+                { parse_mode: 'Markdown' }
+            );
+        } else {
+            // Netflix order - deliver accounts
+            await deliverNetflixAccounts(bot, order.userId, orderId);
+        }
+
+        await ctx.answerCbQuery('✅ Đã hoàn thành đơn hàng');
+        await ctx.editMessageReplyMarkup(undefined);
+
+        logger.info({ orderId }, 'Order marked as FULFILLED by admin');
+    } catch (error) {
+        logger.error({ error, orderId }, 'Failed to fulfill order');
+        await ctx.answerCbQuery('❌ Không thể hoàn thành đơn hàng');
+    }
+}
+
+export async function handleAdminFailed(ctx: Context, bot: Telegraf, orderId: string) {
+    try {
+        const order = await orderService.getOrder(orderId);
+        if (!order) {
+            await ctx.answerCbQuery('Không tìm thấy đơn hàng');
+            return;
+        }
+
+        await orderService.updateOrderStatus(orderId, OrderStatus.FAILED);
+
+        await bot.telegram.sendMessage(order.userId.toString(), BOT_MESSAGES.ORDER_FAILED, {
+            parse_mode: 'Markdown',
+        });
+
+        await ctx.answerCbQuery('✅ Đã đánh dấu thất bại');
+        await ctx.editMessageReplyMarkup(undefined);
+
+        logger.info({ orderId }, 'Order marked as FAILED by admin');
+    } catch (error) {
+        logger.error({ error, orderId }, 'Failed to mark order as failed');
+        await ctx.answerCbQuery('❌ Không thể cập nhật trạng thái');
+    }
+}
