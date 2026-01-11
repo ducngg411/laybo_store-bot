@@ -2,9 +2,10 @@ import Fastify, { FastifyInstance } from 'fastify';
 import { config } from '../shared/config';
 import { logger } from '../shared/logger';
 import { paymentService, SepayWebhookPayload } from '../services/payment.service';
-import { orderService } from '../services/order.service';
+import { orderRepository } from '../db/repositories/order.repository';
 import { Telegraf } from 'telegraf';
-import { notifyUserPaymentSuccess, notifyAdminNewOrder } from '../bot/handlers/order.handler';
+import { notifyUserPaymentSuccess, notifyAdminNewOrder, deliverNetflixAccounts } from '../bot/handlers/order.handler';
+import { ProductType } from '@prisma/client';
 
 export function createServer(bot: Telegraf): FastifyInstance {
     const server = Fastify({
@@ -63,13 +64,35 @@ export function createServer(bot: Telegraf): FastifyInstance {
                 }
 
                 if (paymentRef) {
-                    const order = await orderService.getOrder(paymentRef);
-                    if (order) {
-                        // Notify user
-                        await notifyUserPaymentSuccess(bot, order.userId, order.id);
+                    const order = await orderRepository.findByPaymentRef(paymentRef);
 
-                        // Notify admin
-                        await notifyAdminNewOrder(bot, order);
+                    if (order) {
+                        logger.info({ orderId: order.id, paymentRef }, 'Order found for notification');
+
+                        // Auto-deliver for DIGITAL_GOOD (Netflix accounts)
+                        if (order.product.type === ProductType.DIGITAL_GOOD) {
+                            logger.info({ orderId: order.id, productType: order.product.type }, 'Auto-delivering digital goods');
+                            await deliverNetflixAccounts(bot, order.userId, order.id);
+                        } else {
+                            // For other types (SERVICE_SUBSCRIPTION), notify user to wait and admin for manual processing
+                            await notifyUserPaymentSuccess(bot, order.userId, order.id);
+                            const orderForAdmin = {
+                                id: order.id,
+                                userId: order.userId,
+                                username: order.username,
+                                productName: order.product?.name || 'Unknown',
+                                variantName: order.variant?.name || undefined,
+                                quantity: order.quantity,
+                                totalVnd: order.totalVnd,
+                                paymentRef: order.paymentRef,
+                                metadata: order.metadata,
+                                createdAt: order.createdAt,
+                            };
+
+                            await notifyAdminNewOrder(bot, orderForAdmin);
+                        }
+                    } else {
+                        logger.warn({ paymentRef }, 'Order not found for notification');
                     }
                 }
             }
@@ -94,4 +117,3 @@ export async function startServer(server: FastifyInstance): Promise<void> {
         throw error;
     }
 }
-

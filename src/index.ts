@@ -16,7 +16,7 @@ async function main() {
         const bot = createBot();
 
         logger.info('Starting bot...');
-        await startBot(bot);
+        startBot(bot); // ← BỎ AWAIT ĐI! Bot sẽ chạy async
 
         // Create and start server
         logger.info('Creating server...');

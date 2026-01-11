@@ -176,12 +176,19 @@ export class PaymentService {
 
         // For DIGITAL_GOOD, mark inventory as sold
         if ((order as OrderWithProduct).product.type === ProductType.DIGITAL_GOOD) {
-            const items = await inventoryRepository.findByOrder(order.id);
+            // Find items that were reserved for this order (by productId and RESERVED status)
+            const items = await inventoryRepository.findReservedByProduct(
+                (order as OrderWithProduct).product.id,
+                order.expiresAt!
+            );
             if (items.length > 0) {
                 await inventoryRepository.markAsSold(
                     items.map((i) => i.id),
                     order.id
                 );
+                logger.info({ orderId: order.id, itemCount: items.length }, 'Inventory marked as sold');
+            } else {
+                logger.warn({ orderId: order.id, productId: (order as OrderWithProduct).product.id }, 'No reserved items found to mark as sold');
             }
         }
 

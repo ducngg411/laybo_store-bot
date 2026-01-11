@@ -25,8 +25,27 @@ export async function handleCancelOrder(ctx: Context) {
 
         logger.info({ orderId: activeOrder.id, userId }, 'Order cancelled by user');
     } catch (error) {
-        logger.error({ error }, 'Failed to cancel order');
-        await ctx.answerCbQuery('Không thể huỷ đơn hàng.');
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        logger.error({
+            error,
+            errorMessage: errorMsg,
+            errorStack: error instanceof Error ? error.stack : undefined,
+            userId
+        }, 'Failed to cancel order');
+
+        let userMessage = 'Không thể huỷ đơn hàng.';
+        if (errorMsg.includes('ORDER_CANNOT_BE_CANCELLED')) {
+            if (errorMsg.includes('PAID')) {
+                userMessage = 'Đơn hàng đã được thanh toán, không thể huỷ. Vui lòng liên hệ admin nếu cần hỗ trợ.';
+            } else if (errorMsg.includes('COMPLETED') || errorMsg.includes('PROCESSING')) {
+                userMessage = 'Đơn hàng đã được xử lý, không thể huỷ.';
+            } else if (errorMsg.includes('EXPIRED')) {
+                userMessage = 'Đơn hàng đã hết hạn.';
+            } else if (errorMsg.includes('CANCELLED')) {
+                userMessage = 'Đơn hàng đã được huỷ trước đó.';
+            }
+        }
+        await ctx.answerCbQuery(userMessage);
     }
 }
 
@@ -175,7 +194,10 @@ export async function deliverNetflixAccounts(bot: Telegraf, userId: bigint, orde
             { parse_mode: 'Markdown' }
         );
 
-        logger.info({ userId, orderId, count: accounts.length }, 'Netflix accounts delivered');
+        // Update order status to FULFILLED
+        await orderService.updateOrderStatus(orderId, OrderStatus.FULFILLED);
+
+        logger.info({ userId, orderId, count: accounts.length }, 'Netflix accounts delivered and order fulfilled');
     } catch (error) {
         logger.error({ error, userId, orderId }, 'Failed to deliver Netflix accounts');
     }

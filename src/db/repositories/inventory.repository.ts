@@ -60,6 +60,16 @@ export class InventoryRepository {
         });
     }
 
+    async findReservedByProduct(productId: string, reservedUntil: Date): Promise<InventoryItem[]> {
+        return prisma.inventoryItem.findMany({
+            where: {
+                productId,
+                status: InventoryStatus.RESERVED,
+                reservedUntil,
+            },
+        });
+    }
+
     async countAvailable(productId: string): Promise<number> {
         return prisma.inventoryItem.count({
             where: {

@@ -2,12 +2,16 @@ import { prisma } from '../client';
 import { Order, OrderStatus, Prisma } from '@prisma/client';
 import { ACTIVE_ORDER_STATUSES } from '../../shared/constants';
 
+export type OrderWithRelations = Prisma.OrderGetPayload<{
+    include: { product: true; variant: true };
+}>;
+
 export class OrderRepository {
     async create(data: Prisma.OrderCreateInput): Promise<Order> {
         return prisma.order.create({ data });
     }
 
-    async findById(id: string): Promise<Order | null> {
+    async findById(id: string): Promise<OrderWithRelations | null> {
         return prisma.order.findUnique({
             where: { id },
             include: {
@@ -17,7 +21,7 @@ export class OrderRepository {
         });
     }
 
-    async findByPaymentRef(paymentRef: string): Promise<Order | null> {
+    async findByPaymentRef(paymentRef: string): Promise<OrderWithRelations | null> {
         return prisma.order.findUnique({
             where: { paymentRef },
             include: {
@@ -27,7 +31,7 @@ export class OrderRepository {
         });
     }
 
-    async findActiveByUser(userId: bigint): Promise<Order | null> {
+    async findActiveByUser(userId: bigint): Promise<OrderWithRelations | null> {
         return prisma.order.findFirst({
             where: {
                 userId,

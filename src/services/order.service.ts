@@ -182,14 +182,12 @@ export class OrderService {
         }
 
         if (order.status !== OrderStatus.PENDING_PAYMENT && order.status !== OrderStatus.DRAFT) {
-            throw new Error('ORDER_CANNOT_BE_CANCELLED');
+            logger.warn({ orderId, currentStatus: order.status }, 'Cannot cancel order - invalid status');
+            throw new Error(`ORDER_CANNOT_BE_CANCELLED:${order.status}`);
         }
 
-        // Type assertion: findById includes product
-        type OrderWithProduct = typeof order & { product: { type: ProductType } };
-
         // Release inventory if reserved
-        if ((order as OrderWithProduct).product.type === ProductType.DIGITAL_GOOD) {
+        if (order.product.type === ProductType.DIGITAL_GOOD) {
             const items = await inventoryRepository.findByOrder(orderId);
             if (items.length > 0) {
                 await inventoryRepository.release(items.map((i) => i.id));

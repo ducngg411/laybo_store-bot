@@ -3,9 +3,14 @@ import { customAlphabet } from 'nanoid';
 const nanoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 8);
 
 export function generatePaymentRef(orderId: string): string {
-    // Extract last 8 chars of order ID or generate random
-    const shortId = orderId.slice(-8).toUpperCase();
-    return `ORD${shortId}`; // No underscore for easier typing
+    // Extract last 10 chars and remove special characters
+    const cleanId = orderId
+        .slice(-10)  // Lấy 10 ký tự cuối
+        .replace(/[^A-Z0-9]/gi, '')  // Bỏ hết ký tự đặc biệt
+        .toUpperCase()
+        .slice(-8);  // Chỉ lấy 8 ký tự
+
+    return `ORD${cleanId}`;
 }
 
 export function generateOrderId(): string {

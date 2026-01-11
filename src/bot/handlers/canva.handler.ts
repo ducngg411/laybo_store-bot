@@ -30,15 +30,24 @@ export async function handleCanvaSelect(ctx: Context) {
     // Check for active order
     const activeOrder = await orderService.getActiveOrder(BigInt(userId));
     if (activeOrder) {
+        const expiryMinutes = Math.floor(
+            (activeOrder.expiresAt!.getTime() - Date.now()) / 1000 / 60
+        );
+
         const keyboard = Markup.inlineKeyboard([
-            [Markup.button.callback('👁️ Xem QR', CALLBACK_ACTIONS.VIEW_QR)],
-            [Markup.button.callback('❌ Huỷ đơn', CALLBACK_ACTIONS.CANCEL_ORDER)],
+            [Markup.button.callback('📋 Xem QR thanh toán', CALLBACK_ACTIONS.VIEW_QR)],
+            [Markup.button.callback('❌ Hủy đơn và tạo mới', CALLBACK_ACTIONS.CANCEL_ORDER)],
         ]);
 
-        await ctx.reply(BOT_MESSAGES.ORDER_EXISTS(activeOrder.id, activeOrder.status), {
-            parse_mode: 'Markdown',
-            ...keyboard,
-        });
+        await ctx.reply(
+            `⚠️ *Bạn đang có đơn hàng chưa hoàn tất*\n\n` +
+            `📦 Sản phẩm: ${activeOrder.productName}${activeOrder.variantName ? ' - ' + activeOrder.variantName : ''}\n` +
+            `🔢 Số lượng: ${activeOrder.quantity}\n` +
+            `💰 Tổng tiền: *${formatCurrency(activeOrder.totalVnd)}*\n` +
+            `⏳ Hết hạn sau: ${expiryMinutes} phút\n\n` +
+            `Bạn muốn làm gì?`,
+            { parse_mode: 'Markdown', ...keyboard }
+        );
         return;
     }
 
@@ -225,7 +234,30 @@ export async function handleCanvaEmailInput(ctx: Context, text: string) {
 
         logger.info({ orderId: order.id, userId }, 'Canva order created, QR sent');
     } catch (error) {
-        if (error instanceof Error) {
+        if (error instanceof Error && error.message === 'USER_HAS_ACTIVE_ORDER') {
+            // Get active order details
+            const activeOrder = await orderService.getActiveOrder(BigInt(userId));
+            if (activeOrder) {
+                const expiryMinutes = Math.floor(
+                    (activeOrder.expiresAt!.getTime() - Date.now()) / 1000 / 60
+                );
+
+                const keyboard = Markup.inlineKeyboard([
+                    [Markup.button.callback('📋 Xem QR thanh toán', CALLBACK_ACTIONS.VIEW_QR)],
+                    [Markup.button.callback('❌ Hủy đơn và tạo mới', CALLBACK_ACTIONS.CANCEL_ORDER)],
+                ]);
+
+                await ctx.reply(
+                    `⚠️ *Bạn đang có đơn hàng chưa hoàn tất*\n\n` +
+                    `📦 Sản phẩm: ${activeOrder.productName}${activeOrder.variantName ? ' - ' + activeOrder.variantName : ''}\n` +
+                    `🔢 Số lượng: ${activeOrder.quantity}\n` +
+                    `💰 Tổng tiền: *${formatCurrency(activeOrder.totalVnd)}*\n` +
+                    `⏳ Hết hạn sau: ${expiryMinutes} phút\n\n` +
+                    `Bạn muốn làm gì?`,
+                    { parse_mode: 'Markdown', ...keyboard }
+                );
+            }
+        } else if (error instanceof Error) {
             await ctx.reply(`❌ ${error.message}\n\nVui lòng gửi lại danh sách email.`);
         } else {
             logger.error({ error }, 'Failed to process email input');
