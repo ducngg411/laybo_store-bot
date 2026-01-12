@@ -143,7 +143,7 @@ export async function handleVeo3Select(ctx: Context) {
 
     userSessions.set(userId, { step: 'select_plan' });
 
-    await ctx.reply('🤖 *Veo3 Plus 1 tháng (Bảo hành full)*\n\nVui lòng chọn gói:', {
+    await ctx.reply('🤖 *Veo3 UTRAL 1 tháng (Bảo hành full)*\n\nVui lòng chọn gói:', {
         parse_mode: 'Markdown',
         ...keyboard,
     });

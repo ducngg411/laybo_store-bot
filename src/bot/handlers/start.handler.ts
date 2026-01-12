@@ -45,7 +45,7 @@ export async function handleStart(ctx: Context) {
         ],
         [
             Markup.button.callback(
-                `🎬 NETFLIX EXTRAL 4K • 40K/1${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
+                `🎬 NETFLIX EXTRAL 4K • 55K/1${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_NETFLIX
             ),
         ],
@@ -132,7 +132,7 @@ export async function handleRefreshInventory(ctx: Context) {
         ],
         [
             Markup.button.callback(
-                `🎬 NETFLIX EXTRAL 4K • 40K/1${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
+                `🎬 NETFLIX EXTRAL 4K • 55K/1${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_NETFLIX
             ),
         ],
