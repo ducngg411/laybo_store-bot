@@ -1,6 +1,7 @@
 export const PRODUCT_CODES = {
     CANVA: 'CANVA',
     NETFLIX: 'NETFLIX',
+    CAPCUT: 'CAPCUT',
 } as const;
 
 export const VARIANT_CODES = {
@@ -9,6 +10,7 @@ export const VARIANT_CODES = {
     CANVA_6M: 'CANVA_6M',
     CANVA_12M: 'CANVA_12M',
     NETFLIX_1M: 'NETFLIX_1M',
+    CAPCUT_1W: 'CAPCUT_1W',
 } as const;
 
 export const ORDER_STATUSES = {
@@ -39,6 +41,7 @@ export const CALLBACK_ACTIONS = {
     // Main menu
     SELECT_CANVA: 'select_canva',
     SELECT_NETFLIX: 'select_netflix',
+    SELECT_CAPCUT: 'select_capcut',
     SUPPORT: 'support',
     REFRESH_INVENTORY: 'refresh_inventory',
 
@@ -57,6 +60,14 @@ export const CALLBACK_ACTIONS = {
     NETFLIX_QTY_MAX: 'netflix_qty_max', // ⭐ NEW: Mua tối đa
     NETFLIX_GO_BACK_TO_MAIN: 'netflix_back_main', // ⭐ Quay lại menu chính
     NETFLIX_GO_BACK_TO_PLANS: 'netflix_back_plans', // ⭐ Quay lại chọn plan
+
+    // Capcut flow
+    CAPCUT_PLAN_PREFIX: 'capcut_plan_',
+    CAPCUT_QTY_PREFIX: 'capcut_qty_',
+    CAPCUT_QTY_CUSTOM: 'capcut_qty_custom',
+    CAPCUT_QTY_MAX: 'capcut_qty_max', // ⭐ NEW: Mua tối đa
+    CAPCUT_GO_BACK_TO_MAIN: 'capcut_back_main', // ⭐ Quay lại menu chính
+    CAPCUT_GO_BACK_TO_PLANS: 'capcut_back_plans', //
 
     // Order actions
     VIEW_QR: 'view_qr',
@@ -103,6 +114,7 @@ export const BOT_MESSAGES = {
 
     ORDER_FAILED: '❌ *Đơn hàng thất bại*\n\nRất tiếc, đơn hàng của bạn không thể hoàn thành.\n\nVui lòng liên hệ admin @ducngg411 để được hoàn 100% tiền.',
 
+    // Netflix
     NETFLIX_DELIVERED: (accounts: Array<{ username: string; password: string; expiryDate: string }>) => {
         let msg = '🎉 *Đơn hàng Netflix đã hoàn thành!*\n\n';
         accounts.forEach((acc, idx) => {
@@ -115,7 +127,6 @@ export const BOT_MESSAGES = {
         return msg;
     },
 
-    // ⭐ NEW: Insufficient stock messages
     NETFLIX_INSUFFICIENT_STOCK: (requestedQty: number, availableQty: number) =>
         `⚠️ *Không đủ hàng*\n\n` +
         `🎬 Netflix Premium 4K hiện còn: *${availableQty} tài khoản*.\n` +
@@ -125,6 +136,30 @@ export const BOT_MESSAGES = {
     NETFLIX_INVALID_QUANTITY: (min: number, max: number) =>
         `⚠️ *Số lượng không hợp lệ.*\n\n` +
         `Vui lòng nhập số từ *${min}* đến *${max}*.`,
+
+    // Capcut
+    CAPCUT_DELIVERED: (accounts: Array<{ username: string; password: string; expiryDate: string }>) => {
+        let msg = '🎉 *Đơn hàng Capcut đã hoàn thành!*\n\n';
+        accounts.forEach((acc, idx) => {
+            msg += `📺 *Tài khoản ${idx + 1}:*\n`;
+            msg += `👤 Username: \`${acc.username}\`\n`;
+            msg += `🔑 Password: \`${acc.password}\`\n`;
+            msg += `⏰ Hạn dùng: ${acc.expiryDate}\n\n`;
+        });
+        msg += '💡 Nhấn vào để copy, hoặc dùng nút bên dưới.';
+        return msg;
+    },
+
+    // ⭐ NEW: Insufficient stock messages
+    CAPCUT_INSUFFICIENT_STOCK: (requestedQty: number, availableQty: number) =>
+        `⚠️ *Không đủ hàng*\n\n` +
+        `🎬 Capcut Pro hiện còn: *${availableQty} tài khoản*.\n` +
+        `Bạn vừa chọn: *${requestedQty}*.\n\n` +
+        `Vui lòng chọn số lượng mới:`,
+
+    CAPCUT_INVALID_QUANTITY: (min: number, max: number) =>
+        `⚠️ *Số lượng không hợp lệ.*\n\n` +
+        `Vui lòng nhập số từ *${min}* đến *${max}*.`,
 } as const;
 
 export const LIMITS = {
@@ -132,4 +167,6 @@ export const LIMITS = {
     EMAIL_MAX: 50,
     NETFLIX_QTY_MIN: 1,
     NETFLIX_QTY_MAX: 100,
+    CAPCUT_QTY_MIN: 1,
+    CAPCUT_QTY_MAX: 100,
 } as const;

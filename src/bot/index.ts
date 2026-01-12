@@ -25,6 +25,18 @@ import {
     handleNetflixGoBackToMain,
     handleNetflixGoBackToPlans,
 } from './handlers/netflix.handler';
+
+import {
+    handleCapcutSelect,
+    handleCapcutPlanSelect,
+    handleCapcutQuantitySelect,
+    handleCapcutQuantityCustom,
+    handleCapcutQuantityInput,
+    handleCapcutQuantityMax,
+    handleCapcutGoBackToMain,
+    handleCapcutGoBackToPlans,
+} from './handlers/capcut.handler';
+
 import {
     handleCancelOrder,
     handleViewQR,
@@ -46,6 +58,7 @@ export function createBot(): Telegraf {
     // Main menu callbacks
     bot.action(CALLBACK_ACTIONS.SELECT_CANVA, handleCanvaSelect);
     bot.action(CALLBACK_ACTIONS.SELECT_NETFLIX, handleNetflixSelect);
+    bot.action(CALLBACK_ACTIONS.SELECT_CAPCUT, handleCapcutSelect);
     bot.action(CALLBACK_ACTIONS.SUPPORT, handleSupport);
     bot.action(CALLBACK_ACTIONS.REFRESH_INVENTORY, handleRefreshInventory);
 
@@ -81,6 +94,22 @@ export function createBot(): Telegraf {
     bot.action(CALLBACK_ACTIONS.NETFLIX_GO_BACK_TO_MAIN, handleNetflixGoBackToMain);
     bot.action(CALLBACK_ACTIONS.NETFLIX_GO_BACK_TO_PLANS, handleNetflixGoBackToPlans);
 
+    // Capcut flow callbacks
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.CAPCUT_PLAN_PREFIX}(.+)$`), (ctx) => {
+        const variantCode = ctx.match[1];
+        return handleCapcutPlanSelect(ctx, variantCode);
+    });
+
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.CAPCUT_QTY_PREFIX}(\\d+)$`), (ctx) => {
+        const quantity = parseInt(ctx.match[1], 10);
+        return handleCapcutQuantitySelect(ctx, quantity);
+    });
+
+    bot.action(CALLBACK_ACTIONS.CAPCUT_QTY_CUSTOM, handleCapcutQuantityCustom);
+    bot.action(CALLBACK_ACTIONS.CAPCUT_QTY_MAX, handleCapcutQuantityMax);
+    bot.action(CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_MAIN, handleCapcutGoBackToMain);
+    bot.action(CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_PLANS, handleCapcutGoBackToPlans);
+
     // Order actions
     bot.action(CALLBACK_ACTIONS.VIEW_QR, handleViewQR);
     bot.action(CALLBACK_ACTIONS.CANCEL_ORDER, handleCancelOrder);
@@ -113,6 +142,9 @@ export function createBot(): Telegraf {
 
         // Try Netflix quantity input
         await handleNetflixQuantityInput(ctx, text);
+
+        // Try Capcut quantity input
+        await handleCapcutQuantityInput(ctx, text);
     });
 
     // Error handling

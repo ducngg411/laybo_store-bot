@@ -72,7 +72,7 @@ export async function handleCanvaSelect(ctx: Context) {
 
     userSessions.set(userId, { step: 'select_plan' });
 
-    await ctx.reply('📦 *Nâng cấp Canva Pro*\n\nVui lòng chọn gói:', {
+    await ctx.reply('📦 *Nâng cấp Canva Pro (Bảo hành full)*\n\nVui lòng chọn gói:', {
         parse_mode: 'Markdown',
         ...keyboard,
     });

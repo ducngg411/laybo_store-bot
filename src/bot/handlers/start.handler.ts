@@ -12,10 +12,16 @@ export async function handleStart(ctx: Context) {
         netflixCount = await inventoryRepository.countAvailable(netflixProduct.id);
     }
 
+    const capcutProduct = await productRepository.findByCode(PRODUCT_CODES.CAPCUT);
+    let capcutCount = 0;
+    if (capcutProduct && capcutProduct.type === ProductType.DIGITAL_GOOD) {
+        capcutCount = await inventoryRepository.countAvailable(capcutProduct.id);
+    }
+
     const keyboard = Markup.inlineKeyboard([
         [
             Markup.button.callback(
-                '🟦 NÂNG CẤP CANVA PRO TEAMS CHÍNH CHỦ',
+                '🎨 NÂNG CẤP CANVA PRO TEAMS CHÍNH CHỦ',
                 CALLBACK_ACTIONS.SELECT_CANVA
             ),
         ],
@@ -23,6 +29,12 @@ export async function handleStart(ctx: Context) {
             Markup.button.callback(
                 `🎬 TÀI KHOẢN NETFLIX PREMIUM 4K${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_NETFLIX
+            ),
+        ],
+        [
+            Markup.button.callback(
+                `✂️ TÀI KHOẢN CAPCUT PRO 1 TUẦN${capcutCount > 0 ? ` (Còn ${capcutCount})` : ' (Hết hàng)'}`,
+                CALLBACK_ACTIONS.SELECT_CAPCUT
             ),
         ],
         [
@@ -49,6 +61,12 @@ export async function handleRefreshInventory(ctx: Context) {
         netflixCount = await inventoryRepository.countAvailable(netflixProduct.id);
     }
 
+    // Get capcut product to check inventory
+    const capcutProduct = await productRepository.findByCode(PRODUCT_CODES.CAPCUT);
+    let capcutCount = 0;
+    if (capcutProduct && capcutProduct.type === ProductType.DIGITAL_GOOD) {
+        capcutCount = await inventoryRepository.countAvailable(capcutProduct.id);
+    }
     const keyboard = Markup.inlineKeyboard([
         [
             Markup.button.callback(
@@ -60,6 +78,12 @@ export async function handleRefreshInventory(ctx: Context) {
             Markup.button.callback(
                 `🎬 TÀI KHOẢN NETFLIX PREMIUM 4K${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_NETFLIX
+            ),
+        ],
+        [
+            Markup.button.callback(
+                `✂️ TÀI KHOẢN CAPCUT PRO 1 TUẦN${capcutCount > 0 ? ` (Còn ${capcutCount})` : ' (Hết hàng)'}`,
+                CALLBACK_ACTIONS.SELECT_CAPCUT
             ),
         ],
         [
