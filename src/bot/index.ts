@@ -11,6 +11,9 @@ import {
     handleCanvaQuantitySelect,
     handleCanvaQuantityCustom,
     handleCanvaEmailInput,
+    handleCanvaGoBackToMain,
+    handleCanvaGoBackToPlans,
+    handleCanvaGoBackToQuantity,
 } from './handlers/canva.handler';
 import {
     handleNetflixSelect,
@@ -18,6 +21,9 @@ import {
     handleNetflixQuantitySelect,
     handleNetflixQuantityCustom,
     handleNetflixQuantityInput,
+    handleNetflixQuantityMax,
+    handleNetflixGoBackToMain,
+    handleNetflixGoBackToPlans,
 } from './handlers/netflix.handler';
 import {
     handleCancelOrder,
@@ -26,6 +32,8 @@ import {
     handleAdminInProgress,
     handleAdminFulfilled,
     handleAdminFailed,
+    handleBuyMore,
+    handleBackToMain,
 } from './handlers/order.handler';
 
 export function createBot(): Telegraf {
@@ -53,6 +61,9 @@ export function createBot(): Telegraf {
     });
 
     bot.action(CALLBACK_ACTIONS.CANVA_QTY_CUSTOM, handleCanvaQuantityCustom);
+    bot.action(CALLBACK_ACTIONS.CANVA_GO_BACK_TO_MAIN, handleCanvaGoBackToMain);
+    bot.action(CALLBACK_ACTIONS.CANVA_GO_BACK_TO_PLANS, handleCanvaGoBackToPlans);
+    bot.action(CALLBACK_ACTIONS.CANVA_GO_BACK_TO_QUANTITY, handleCanvaGoBackToQuantity);
 
     // Netflix flow callbacks
     bot.action(new RegExp(`^${CALLBACK_ACTIONS.NETFLIX_PLAN_PREFIX}(.+)$`), (ctx) => {
@@ -66,11 +77,16 @@ export function createBot(): Telegraf {
     });
 
     bot.action(CALLBACK_ACTIONS.NETFLIX_QTY_CUSTOM, handleNetflixQuantityCustom);
+    bot.action(CALLBACK_ACTIONS.NETFLIX_QTY_MAX, handleNetflixQuantityMax);
+    bot.action(CALLBACK_ACTIONS.NETFLIX_GO_BACK_TO_MAIN, handleNetflixGoBackToMain);
+    bot.action(CALLBACK_ACTIONS.NETFLIX_GO_BACK_TO_PLANS, handleNetflixGoBackToPlans);
 
     // Order actions
     bot.action(CALLBACK_ACTIONS.VIEW_QR, handleViewQR);
     bot.action(CALLBACK_ACTIONS.CANCEL_ORDER, handleCancelOrder);
     bot.action(CALLBACK_ACTIONS.CONFIRM_PAYMENT, handleConfirmPayment);
+    bot.action(CALLBACK_ACTIONS.BUY_MORE, handleBuyMore);
+    bot.action(CALLBACK_ACTIONS.BACK_TO_MAIN, handleBackToMain);
 
     // Admin callbacks
     bot.action(new RegExp(`^${CALLBACK_ACTIONS.ADMIN_IN_PROGRESS}(.+)$`), (ctx) => {

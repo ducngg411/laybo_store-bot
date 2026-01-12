@@ -113,7 +113,9 @@ export async function handleViewQR(ctx: Context) {
                     `💰 Tổng tiền: *${formatCurrency(activeOrder.totalVnd)}*\n` +
                     `🔖 Mã đơn: \`${activeOrder.paymentRef}\`\n` +
                     `⏰ Hết hạn sau: ${expiryMinutes} phút\n\n` +
-                    `📱 Quét mã QR để thanh toán`,
+                    `📱 Quét mã QR để thanh toán\n\n` +
+                    `ℹ️ Vui lòng chuyển khoản đúng nội dung & số tiền để hệ thống tự động xử lý.\n` +
+                    `⏱️ Đơn được giữ trong ${expiryMinutes} phút.`,
                 parse_mode: 'Markdown',
                 ...keyboard,
             }
@@ -260,10 +262,18 @@ export async function deliverNetflixAccounts(bot: Telegraf, userId: bigint, orde
 
         const accounts = items.map((item) => inventoryService.parseItemPayload(item));
 
+        const keyboard = Markup.inlineKeyboard([
+            [
+                Markup.button.callback('🛒 Mua thêm', CALLBACK_ACTIONS.BUY_MORE),
+                Markup.button.callback('🏠 Menu chính', CALLBACK_ACTIONS.BACK_TO_MAIN),
+            ],
+            [Markup.button.callback('☎️ Hỗ trợ', CALLBACK_ACTIONS.SUPPORT)],
+        ]);
+
         await bot.telegram.sendMessage(
             userId.toString(),
             BOT_MESSAGES.NETFLIX_DELIVERED(accounts),
-            { parse_mode: 'Markdown' }
+            { parse_mode: 'Markdown', ...keyboard }
         );
 
         // Update order status to FULFILLED
@@ -302,10 +312,18 @@ export async function handleAdminFulfilled(ctx: Context, bot: Telegraf, orderId:
 
         if (metadata?.emails) {
             // Canva order
+            const keyboard = Markup.inlineKeyboard([
+                [
+                    Markup.button.callback('🛒 Mua thêm', CALLBACK_ACTIONS.BUY_MORE),
+                    Markup.button.callback('🏠 Menu chính', CALLBACK_ACTIONS.BACK_TO_MAIN),
+                ],
+                [Markup.button.callback('☎️ Hỗ trợ', CALLBACK_ACTIONS.SUPPORT)],
+            ]);
+
             await bot.telegram.sendMessage(
                 order.userId.toString(),
                 BOT_MESSAGES.ORDER_FULFILLED(metadata.emails),
-                { parse_mode: 'Markdown' }
+                { parse_mode: 'Markdown', ...keyboard }
             );
         } else {
             // Netflix order - deliver accounts
@@ -344,4 +362,22 @@ export async function handleAdminFailed(ctx: Context, bot: Telegraf, orderId: st
         logger.error({ error, orderId }, 'Failed to mark order as failed');
         await ctx.answerCbQuery('❌ Không thể cập nhật trạng thái');
     }
+}
+
+/**
+ * Handle "Mua thêm" button - show main menu
+ */
+export async function handleBuyMore(ctx: Context) {
+    await ctx.answerCbQuery('🛒 Mua thêm');
+    const { handleStart } = await import('./start.handler');
+    await handleStart(ctx);
+}
+
+/**
+ * Handle "Menu chính" button - show main menu
+ */
+export async function handleBackToMain(ctx: Context) {
+    await ctx.answerCbQuery('🏠 Menu chính');
+    const { handleStart } = await import('./start.handler');
+    await handleStart(ctx);
 }

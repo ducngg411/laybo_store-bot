@@ -46,16 +46,24 @@ export const CALLBACK_ACTIONS = {
     CANVA_PLAN_PREFIX: 'canva_plan_',
     CANVA_QTY_PREFIX: 'canva_qty_',
     CANVA_QTY_CUSTOM: 'canva_qty_custom',
+    CANVA_GO_BACK_TO_MAIN: 'canva_back_main',
+    CANVA_GO_BACK_TO_PLANS: 'canva_back_plans',
+    CANVA_GO_BACK_TO_QUANTITY: 'canva_back_qty',
 
     // Netflix flow
     NETFLIX_PLAN_PREFIX: 'netflix_plan_',
     NETFLIX_QTY_PREFIX: 'netflix_qty_',
     NETFLIX_QTY_CUSTOM: 'netflix_qty_custom',
+    NETFLIX_QTY_MAX: 'netflix_qty_max', // ⭐ NEW: Mua tối đa
+    NETFLIX_GO_BACK_TO_MAIN: 'netflix_back_main', // ⭐ Quay lại menu chính
+    NETFLIX_GO_BACK_TO_PLANS: 'netflix_back_plans', // ⭐ Quay lại chọn plan
 
     // Order actions
     VIEW_QR: 'view_qr',
     CANCEL_ORDER: 'cancel_order',
     CONFIRM_PAYMENT: 'confirm_payment',
+    BUY_MORE: 'buy_more', // ⭐ Mua thêm
+    BACK_TO_MAIN: 'back_to_main', // ⭐ Menu chính
 
     // Admin actions
     ADMIN_IN_PROGRESS: 'admin_in_progress_',
@@ -106,11 +114,22 @@ export const BOT_MESSAGES = {
         msg += '💡 Nhấn vào để copy, hoặc dùng nút bên dưới.';
         return msg;
     },
+
+    // ⭐ NEW: Insufficient stock messages
+    NETFLIX_INSUFFICIENT_STOCK: (requestedQty: number, availableQty: number) =>
+        `⚠️ *Không đủ hàng*\n\n` +
+        `🎬 Netflix Premium 4K hiện còn: *${availableQty} tài khoản*.\n` +
+        `Bạn vừa chọn: *${requestedQty}*.\n\n` +
+        `Vui lòng chọn số lượng mới:`,
+
+    NETFLIX_INVALID_QUANTITY: (min: number, max: number) =>
+        `⚠️ *Số lượng không hợp lệ.*\n\n` +
+        `Vui lòng nhập số từ *${min}* đến *${max}*.`,
 } as const;
 
 export const LIMITS = {
     EMAIL_MIN: 1,
     EMAIL_MAX: 50,
     NETFLIX_QTY_MIN: 1,
-    NETFLIX_QTY_MAX: 20,
+    NETFLIX_QTY_MAX: 100,
 } as const;

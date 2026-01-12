@@ -8,6 +8,7 @@ import {
     CALLBACK_ACTIONS,
     PRODUCT_CODES,
     LIMITS,
+    BOT_MESSAGES,
 } from '../../shared/constants';
 import { formatCurrency } from '../../shared/utils';
 
@@ -16,9 +17,81 @@ interface NetflixSession {
     variantCode?: string;
     variantName?: string;
     unitPrice?: number;
+    currentStock?: number; // ⭐ NEW: Track current stock
 }
 
 const userSessions = new Map<number, NetflixSession>();
+
+/**
+ * Generate quantity selection keyboard based on stock availability
+ * 
+ * Rules:
+ * - Stock ≤ 5: [1..stock] + [Quay lại]
+ * - Stock > 5: [1..5] + [Nhập số khác] + [Mua tối đa] + [Quay lại]
+ */
+function generateQuantityKeyboard(stock: number, showMaxButton: boolean = false) {
+    const buttons = [];
+
+    if (stock <= 0) {
+        // No stock - only show back button
+        buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.NETFLIX_GO_BACK_TO_PLANS)]);
+    } else if (stock <= 5) {
+        // Stock ≤ 5: show all quantities + back
+        const qtyButtons = [];
+        for (let i = 1; i <= stock; i++) {
+            qtyButtons.push(Markup.button.callback(
+                i.toString(),
+                `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}${i}`
+            ));
+        }
+
+        // Show in rows of 3
+        for (let i = 0; i < qtyButtons.length; i += 3) {
+            buttons.push(qtyButtons.slice(i, i + 3));
+        }
+
+        buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.NETFLIX_GO_BACK_TO_PLANS)]);
+    } else {
+        // Stock > 5
+        if (showMaxButton) {
+            // After user requested > stock: show [Mua X (tối đa)] + [1, 2] + [Quay lại]
+            buttons.push([
+                Markup.button.callback(
+                    `✅ Mua ${stock} (tối đa)`,
+                    CALLBACK_ACTIONS.NETFLIX_QTY_MAX
+                ),
+            ]);
+
+            // Show only 1 and 2 for quick selection
+            const quickButtons = [];
+            if (stock >= 1) quickButtons.push(Markup.button.callback('1', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}1`));
+            if (stock >= 2) quickButtons.push(Markup.button.callback('2', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}2`));
+            if (quickButtons.length > 0) {
+                buttons.push(quickButtons);
+            }
+
+            buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.NETFLIX_GO_BACK_TO_PLANS)]);
+        } else {
+            // Normal flow: show [1..5] + [Nhập số khác] + [Mua tối đa] + [Quay lại]
+            buttons.push([
+                Markup.button.callback('1', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}1`),
+                Markup.button.callback('2', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}2`),
+                Markup.button.callback('3', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}3`),
+            ]);
+            buttons.push([
+                Markup.button.callback('4', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}4`),
+                Markup.button.callback('5', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}5`),
+            ]);
+            buttons.push([
+                Markup.button.callback('✏️ Nhập số khác', CALLBACK_ACTIONS.NETFLIX_QTY_CUSTOM),
+                Markup.button.callback(`✅ Mua ${stock} (tối đa)`, CALLBACK_ACTIONS.NETFLIX_QTY_MAX),
+            ]);
+            buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.NETFLIX_GO_BACK_TO_PLANS)]);
+        }
+    }
+
+    return Markup.inlineKeyboard(buttons);
+}
 
 export async function handleNetflixSelect(ctx: Context) {
     const userId = ctx.from?.id;
@@ -63,6 +136,9 @@ export async function handleNetflixSelect(ctx: Context) {
         )
     );
 
+    // Add back button
+    buttons.push(Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.NETFLIX_GO_BACK_TO_MAIN));
+
     const keyboard = Markup.inlineKeyboard(buttons, { columns: 1 });
 
     userSessions.set(userId, { step: 'select_plan' });
@@ -83,39 +159,42 @@ export async function handleNetflixPlanSelect(ctx: Context, variantCode: string)
         return;
     }
 
-    // Update session
+    // ⭐ Check stock availability
+    const product = await productRepository.findByCode(PRODUCT_CODES.NETFLIX);
+    if (!product) {
+        await ctx.reply('❌ Sản phẩm không khả dụng.');
+        return;
+    }
+
+    const currentStock = await inventoryService.getAvailableCount(product.id);
+
+    // Update session with stock info
     userSessions.set(userId, {
         step: 'input_quantity',
         variantCode: variant.code,
         variantName: variant.name,
         unitPrice: variant.priceVnd,
+        currentStock,
     });
 
-    // Show quantity selection
-    const keyboard = Markup.inlineKeyboard([
-        [
-            Markup.button.callback('1', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}1`),
-            Markup.button.callback('2', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}2`),
-            Markup.button.callback('3', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}3`),
-        ],
-        [
-            Markup.button.callback('4', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}4`),
-            Markup.button.callback('5', `${CALLBACK_ACTIONS.NETFLIX_QTY_PREFIX}5`),
-        ],
-        [Markup.button.callback('✏️ Nhập số khác', CALLBACK_ACTIONS.NETFLIX_QTY_CUSTOM)],
-    ]);
+    // ⭐ Generate keyboard based on stock
+    const keyboard = generateQuantityKeyboard(currentStock);
 
-    await ctx.editMessageText(
-        `✅ Đã chọn: *${variant.name}* - ${formatCurrency(variant.priceVnd)}/tài khoản\n\n` +
-        `💬 Bạn cần mua bao nhiêu tài khoản?`,
-        {
-            parse_mode: 'Markdown',
-            ...keyboard,
-        }
-    );
+    let message = `✅ Đã chọn: *${variant.name}* - ${formatCurrency(variant.priceVnd)}/tài khoản\n\n`;
+
+    if (currentStock === 0) {
+        message += `⚠️ *Hiện tại chưa có hàng.*\n\nVui lòng liên hệ admin @ducngg411`;
+    } else {
+        message += `🎬 Còn *${currentStock} tài khoản* trong kho\n\n💬 Bạn cần mua bao nhiêu tài khoản?`;
+    }
+
+    await ctx.editMessageText(message, {
+        parse_mode: 'Markdown',
+        ...keyboard,
+    });
 }
 
-export async function handleNetflixQuantitySelect(ctx: Context, quantity: number) {
+export async function handleNetflixQuantitySelect(ctx: Context, quantity: number, isFromTextInput: boolean = false) {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -125,23 +204,174 @@ export async function handleNetflixQuantitySelect(ctx: Context, quantity: number
         return;
     }
 
-    // Check inventory
-    const product = await productRepository.findByCode(PRODUCT_CODES.NETFLIX);
-    if (!product) {
-        await ctx.reply('❌ Sản phẩm không khả dụng.');
+    const currentStock = session.currentStock || 0;
+
+    // ⭐ Validate quantity against stock
+    if (quantity > currentStock) {
+        // Show insufficient stock message
+        const keyboard = generateQuantityKeyboard(currentStock, true); // true = show max button prominently
+
+        const message = BOT_MESSAGES.NETFLIX_INSUFFICIENT_STOCK(quantity, currentStock);
+
+        if (isFromTextInput) {
+            await ctx.reply(message, {
+                parse_mode: 'Markdown',
+                ...keyboard,
+            });
+        } else {
+            await ctx.editMessageText(message, {
+                parse_mode: 'Markdown',
+                ...keyboard,
+            });
+        }
         return;
     }
 
-    const isAvailable = await inventoryService.checkAvailability(product.id, quantity);
-    if (!isAvailable) {
-        await ctx.editMessageText(
-            `❌ *Hết hàng*\n\nHiện tại không đủ ${quantity} tài khoản Netflix.\n\n` +
-            `Vui lòng liên hệ admin @ducngg411 hoặc chọn số lượng ít hơn.`,
-            { parse_mode: 'Markdown' }
-        );
-        userSessions.delete(userId);
+    // Continue with order creation
+    await createNetflixOrder(ctx, quantity, session, isFromTextInput);
+}
+
+/**
+ * Handle "Mua tối đa" button - buy max available stock
+ */
+export async function handleNetflixQuantityMax(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const session = userSessions.get(userId);
+    if (!session || session.step !== 'input_quantity') {
+        await ctx.reply('❌ Phiên làm việc không hợp lệ. Vui lòng bắt đầu lại từ /start');
         return;
     }
+
+    const maxStock = session.currentStock || 0;
+
+    if (maxStock === 0) {
+        await ctx.answerCbQuery('⚠️ Hiện tại chưa có hàng');
+        return;
+    }
+
+    await ctx.answerCbQuery(`✅ Mua ${maxStock} tài khoản`);
+    await createNetflixOrder(ctx, maxStock, session);
+}
+
+/**
+ * Handle custom quantity input from text message
+ */
+export async function handleNetflixQuantityCustom(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const session = userSessions.get(userId);
+    if (!session || session.step !== 'input_quantity') {
+        await ctx.reply('❌ Phiên làm việc không hợp lệ. Vui lòng bắt đầu lại từ /start');
+        return;
+    }
+
+    const currentStock = session.currentStock || 0;
+    const maxAllowed = Math.min(currentStock, LIMITS.NETFLIX_QTY_MAX);
+
+    await ctx.editMessageText(
+        `📝 Vui lòng nhập số lượng tài khoản (${LIMITS.NETFLIX_QTY_MIN}-${maxAllowed}):`,
+        { parse_mode: 'Markdown' }
+    );
+}
+
+/**
+ * Handle text input for custom quantity
+ */
+export async function handleNetflixQuantityInput(ctx: Context, text: string) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const session = userSessions.get(userId);
+    if (!session || session.step !== 'input_quantity') {
+        return;
+    }
+
+    const currentStock = session.currentStock || 0;
+    const maxAllowed = Math.min(currentStock, LIMITS.NETFLIX_QTY_MAX);
+
+    // ⭐ Validate input
+    const qty = parseInt(text, 10);
+
+    if (isNaN(qty)) {
+        // Not a number - use reply instead of edit
+        const keyboard = generateQuantityKeyboard(currentStock, false);
+        await ctx.reply(
+            BOT_MESSAGES.NETFLIX_INVALID_QUANTITY(LIMITS.NETFLIX_QTY_MIN, maxAllowed),
+            {
+                parse_mode: 'Markdown',
+                ...keyboard,
+            }
+        );
+        return;
+    }
+
+    if (qty < LIMITS.NETFLIX_QTY_MIN || qty > LIMITS.NETFLIX_QTY_MAX) {
+        // Out of general bounds - use reply instead of edit
+        const keyboard = generateQuantityKeyboard(currentStock, false);
+        await ctx.reply(
+            BOT_MESSAGES.NETFLIX_INVALID_QUANTITY(LIMITS.NETFLIX_QTY_MIN, LIMITS.NETFLIX_QTY_MAX),
+            {
+                parse_mode: 'Markdown',
+                ...keyboard,
+            }
+        );
+        return;
+    }
+
+    if (qty > currentStock) {
+        // Exceeds current stock - use reply instead of edit
+        const keyboard = generateQuantityKeyboard(currentStock, true); // Show max button
+        await ctx.reply(
+            BOT_MESSAGES.NETFLIX_INSUFFICIENT_STOCK(qty, currentStock),
+            {
+                parse_mode: 'Markdown',
+                ...keyboard,
+            }
+        );
+        return;
+    }
+
+    // Valid quantity - create order
+    await handleNetflixQuantitySelect(ctx, qty, true); // true = from text input
+}
+
+/**
+ * Handle "Quay lại" button - go back to main menu
+ */
+export async function handleNetflixGoBackToMain(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    // Clear session
+    userSessions.delete(userId);
+
+    await ctx.answerCbQuery('↩️ Quay lại');
+
+    // Go back to main menu
+    const { handleStart } = await import('./start.handler');
+    await handleStart(ctx);
+}
+
+/**
+ * Handle "Quay lại" button - go back to plan selection
+ */
+export async function handleNetflixGoBackToPlans(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.answerCbQuery('↩️ Quay lại');
+    await handleNetflixSelect(ctx);
+}
+
+/**
+ * Create Netflix order after validation
+ */
+async function createNetflixOrder(ctx: Context, quantity: number, session: NetflixSession, isFromTextInput: boolean = false) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
 
     try {
         // Create order
@@ -168,22 +398,26 @@ export async function handleNetflixQuantitySelect(ctx: Context, quantity: number
             [Markup.button.callback('✅ Tôi đã thanh toán', CALLBACK_ACTIONS.CONFIRM_PAYMENT)],
         ]);
 
-        await ctx.editMessageText(
+        const orderMessage =
             `🧾 *Đơn hàng #${order.id}*\n\n` +
             `📦 Sản phẩm: ${order.productName} - ${order.variantName}\n` +
             `🎬 Số tài khoản: ${order.quantity}\n` +
             `💰 Tổng tiền: *${formatCurrency(order.totalVnd)}*\n` +
             `🔖 Mã đơn: \`${order.paymentRef}\`\n` +
             `⏰ Hết hạn sau: ${expiryMinutes} phút\n\n` +
-            `Đang gửi QR thanh toán...`,
-            { parse_mode: 'Markdown' }
-        );
+            `Đang gửi QR thanh toán...`;
+
+        if (isFromTextInput) {
+            await ctx.reply(orderMessage, { parse_mode: 'Markdown' });
+        } else {
+            await ctx.editMessageText(orderMessage, { parse_mode: 'Markdown' });
+        }
 
         // Send QR and save messageId
         const sentMessage = await ctx.replyWithPhoto(
             { url: qrUrl },
             {
-                caption: `📱 Quét mã QR để thanh toán\n💰 Số tiền: *${formatCurrency(order.totalVnd)}*\n🔖 Nội dung: \`${order.paymentRef}\``,
+                caption: `📱 Quét mã QR để thanh toán\n💰 Số tiền: *${formatCurrency(order.totalVnd)}*\n🔖 Nội dung: \`${order.paymentRef}\`\n\nℹ️ Vui lòng chuyển khoản đúng nội dung & số tiền để hệ thống tự động xử lý.\n⏱️ Đơn được giữ trong ${expiryMinutes} phút.`,
                 parse_mode: 'Markdown',
                 ...keyboard,
             }
@@ -199,10 +433,11 @@ export async function handleNetflixQuantitySelect(ctx: Context, quantity: number
         logger.info({
             orderId: order.id,
             userId,
+            quantity,
             qrMessageId: sentMessage.message_id
         }, 'Netflix order created, QR sent with messageId saved');
     } catch (error) {
-        logger.error({ error }, 'Failed to create Netflix order');
+        logger.error({ error, userId, quantity }, 'Failed to create Netflix order');
 
         if (error instanceof Error && error.message === 'USER_HAS_ACTIVE_ORDER') {
             // Get active order details
@@ -217,60 +452,40 @@ export async function handleNetflixQuantitySelect(ctx: Context, quantity: number
                     [Markup.button.callback('❌ Hủy đơn và tạo mới', CALLBACK_ACTIONS.CANCEL_ORDER)],
                 ]);
 
-                await ctx.editMessageText(
+                const errorMessage =
                     `⚠️ *Bạn đang có đơn hàng chưa hoàn tất*\n\n` +
                     `📦 Sản phẩm: ${activeOrder.productName}${activeOrder.variantName ? ' - ' + activeOrder.variantName : ''}\n` +
                     `🔢 Số lượng: ${activeOrder.quantity}\n` +
                     `💰 Tổng tiền: *${formatCurrency(activeOrder.totalVnd)}*\n` +
                     `⏳ Hết hạn sau: ${expiryMinutes} phút\n\n` +
-                    `Bạn muốn làm gì?`,
-                    { parse_mode: 'Markdown', ...keyboard }
-                );
+                    `Bạn muốn làm gì?`;
+
+                if (isFromTextInput) {
+                    await ctx.reply(errorMessage, { parse_mode: 'Markdown', ...keyboard });
+                } else {
+                    await ctx.editMessageText(errorMessage, { parse_mode: 'Markdown', ...keyboard });
+                }
             }
         } else if (error instanceof Error && error.message === 'INSUFFICIENT_INVENTORY') {
-            await ctx.editMessageText('❌ Không đủ hàng. Vui lòng thử lại sau.', {
-                parse_mode: 'Markdown',
-            });
+            // This shouldn't happen as we already checked, but handle it anyway
+            const errorMessage = '⚠️ Không đủ hàng. Vui lòng chọn lại số lượng.';
+
+            if (isFromTextInput) {
+                await ctx.reply(errorMessage, { parse_mode: 'Markdown' });
+            } else {
+                await ctx.editMessageText(errorMessage, { parse_mode: 'Markdown' });
+            }
+
+            // Refresh and show quantity selection again
+            await handleNetflixPlanSelect(ctx, session.variantCode!);
         } else {
-            await ctx.editMessageText('❌ Đã xảy ra lỗi. Vui lòng thử lại sau.', {
-                parse_mode: 'Markdown',
-            });
+            const errorMessage = '❌ Đã xảy ra lỗi. Vui lòng thử lại sau.';
+
+            if (isFromTextInput) {
+                await ctx.reply(errorMessage, { parse_mode: 'Markdown' });
+            } else {
+                await ctx.editMessageText(errorMessage, { parse_mode: 'Markdown' });
+            }
         }
     }
-}
-
-export async function handleNetflixQuantityCustom(ctx: Context) {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    const session = userSessions.get(userId);
-    if (!session || session.step !== 'input_quantity') {
-        await ctx.reply('❌ Phiên làm việc không hợp lệ. Vui lòng bắt đầu lại từ /start');
-        return;
-    }
-
-    await ctx.editMessageText(
-        `📝 Vui lòng nhập số lượng tài khoản (${LIMITS.NETFLIX_QTY_MIN}-${LIMITS.NETFLIX_QTY_MAX}):`,
-        { parse_mode: 'Markdown' }
-    );
-}
-
-export async function handleNetflixQuantityInput(ctx: Context, text: string) {
-    const userId = ctx.from?.id;
-    if (!userId) return;
-
-    const session = userSessions.get(userId);
-    if (!session || session.step !== 'input_quantity') {
-        return;
-    }
-
-    const qty = parseInt(text, 10);
-    if (isNaN(qty) || qty < LIMITS.NETFLIX_QTY_MIN || qty > LIMITS.NETFLIX_QTY_MAX) {
-        await ctx.reply(
-            `❌ Số lượng không hợp lệ. Vui lòng nhập số từ ${LIMITS.NETFLIX_QTY_MIN} đến ${LIMITS.NETFLIX_QTY_MAX}.`
-        );
-        return;
-    }
-
-    await handleNetflixQuantitySelect(ctx, qty);
 }

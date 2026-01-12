@@ -70,19 +70,15 @@ async function main() {
 
     console.log(`✅ Created Netflix product with ${netflixVariants.length} variants`);
 
-    // Optional: Create sample inventory for Netflix (for testing)
-    const sampleInventory = [
-        {
-            username: 'netflix_demo1@example.com',
-            password: 'DemoPass123',
+    // Create 50 Netflix inventory accounts
+    const sampleInventory = [];
+    for (let i = 1; i <= 50; i++) {
+        sampleInventory.push({
+            username: `netflix_account${i}@example.com`,
+            password: `NetflixPass${i}${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
             expiryDate: '2026-12-31',
-        },
-        {
-            username: 'netflix_demo2@example.com',
-            password: 'DemoPass456',
-            expiryDate: '2026-12-31',
-        },
-    ];
+        });
+    }
 
     for (const item of sampleInventory) {
         await prisma.inventoryItem.create({

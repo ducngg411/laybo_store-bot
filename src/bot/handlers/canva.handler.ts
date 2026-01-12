@@ -65,6 +65,9 @@ export async function handleCanvaSelect(ctx: Context) {
         )
     );
 
+    // Add back button
+    buttons.push(Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CANVA_GO_BACK_TO_MAIN));
+
     const keyboard = Markup.inlineKeyboard(buttons, { columns: 1 });
 
     userSessions.set(userId, { step: 'select_plan' });
@@ -105,6 +108,7 @@ export async function handleCanvaPlanSelect(ctx: Context, variantCode: string) {
             Markup.button.callback('5', `${CALLBACK_ACTIONS.CANVA_QTY_PREFIX}5`),
         ],
         [Markup.button.callback('✏️ Nhập số khác', CALLBACK_ACTIONS.CANVA_QTY_CUSTOM)],
+        [Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CANVA_GO_BACK_TO_PLANS)],
     ]);
 
     await ctx.editMessageText(
@@ -134,6 +138,10 @@ export async function handleCanvaQuantitySelect(ctx: Context, quantity: number) 
 
     const totalPrice = (session.unitPrice || 0) * quantity;
 
+    const keyboard = Markup.inlineKeyboard([
+        [Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CANVA_GO_BACK_TO_QUANTITY)],
+    ]);
+
     await ctx.editMessageText(
         `✅ Gói: *${session.variantName}*\n` +
         `✅ Số lượng: *${quantity} email*\n` +
@@ -144,7 +152,7 @@ export async function handleCanvaQuantitySelect(ctx: Context, quantity: number) 
         `email1@gmail.com\n` +
         `email2@gmail.com\n` +
         `\`\`\``,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'Markdown', ...keyboard }
     );
 }
 
@@ -226,7 +234,9 @@ export async function handleCanvaEmailInput(ctx: Context, text: string) {
                     `💰 Tổng tiền: *${formatCurrency(order.totalVnd)}*\n` +
                     `🔖 Mã đơn: \`${order.paymentRef}\`\n` +
                     `⏰ Hết hạn sau: ${expiryMinutes} phút\n\n` +
-                    `📱 Quét mã QR để thanh toán`,
+                    `📱 Quét mã QR để thanh toán\n\n` +
+                    `ℹ️ Vui lòng chuyển khoản đúng nội dung & số tiền để hệ thống tự động xử lý.\n` +
+                    `⏱️ Đơn được giữ trong ${expiryMinutes} phút.`,
                 parse_mode: 'Markdown',
                 ...keyboard,
             }
@@ -276,4 +286,49 @@ export async function handleCanvaEmailInput(ctx: Context, text: string) {
             await ctx.reply('❌ Đã xảy ra lỗi. Vui lòng thử lại sau.');
         }
     }
+}
+
+/**
+ * Handle "Quay lại" to main menu
+ */
+export async function handleCanvaGoBackToMain(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    // Clear session
+    userSessions.delete(userId);
+
+    await ctx.answerCbQuery('↩️ Quay lại');
+
+    // Import handleStart from start.handler
+    const { handleStart } = await import('./start.handler');
+    await handleStart(ctx);
+}
+
+/**
+ * Handle "Quay lại" to plan selection
+ */
+export async function handleCanvaGoBackToPlans(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    await ctx.answerCbQuery('↩️ Quay lại');
+    await handleCanvaSelect(ctx);
+}
+
+/**
+ * Handle "Quay lại" to quantity selection
+ */
+export async function handleCanvaGoBackToQuantity(ctx: Context) {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+
+    const session = userSessions.get(userId);
+    if (!session || !session.variantCode) {
+        await ctx.reply('❌ Phiên làm việc không hợp lệ. Vui lòng bắt đầu lại từ /start');
+        return;
+    }
+
+    await ctx.answerCbQuery('↩️ Quay lại');
+    await handleCanvaPlanSelect(ctx, session.variantCode);
 }

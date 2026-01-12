@@ -14,6 +14,11 @@ export class InventoryService {
         return count >= quantity;
     }
 
+    // ⭐ NEW: Get exact available count for stock display
+    async getAvailableCount(productId: string): Promise<number> {
+        return inventoryRepository.countAvailable(productId);
+    }
+
     async getOrderItems(orderId: string): Promise<InventoryItem[]> {
         return inventoryRepository.findByOrder(orderId);
     }
