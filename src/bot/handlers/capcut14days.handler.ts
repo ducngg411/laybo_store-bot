@@ -12,7 +12,7 @@ import {
 } from '../../shared/constants';
 import { formatCurrency } from '../../shared/utils';
 
-interface CapcutSession {
+interface Capcut14dSession {
     step: 'select_plan' | 'input_quantity';
     variantCode?: string;
     variantName?: string;
@@ -20,7 +20,7 @@ interface CapcutSession {
     currentStock?: number; // ⭐ NEW: Track current stock
 }
 
-const userSessions = new Map<number, CapcutSession>();
+const userSessions = new Map<number, Capcut14dSession>();
 
 /**
  * Generate quantity selection keyboard based on stock availability
@@ -34,14 +34,14 @@ function generateQuantityKeyboard(stock: number, showMaxButton: boolean = false)
 
     if (stock <= 0) {
         // No stock - only show back button
-        buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_PLANS)]);
+        buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CAPCUT14DAYS_GO_BACK_TO_PLANS)]);
     } else if (stock <= 5) {
         // Stock ≤ 5: show all quantities + back
         const qtyButtons = [];
         for (let i = 1; i <= stock; i++) {
             qtyButtons.push(Markup.button.callback(
                 i.toString(),
-                `${CALLBACK_ACTIONS.CAPCUT_QTY_PREFIX}${i}`
+                `${CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_PREFIX}${i}`
             ));
         }
 
@@ -50,7 +50,7 @@ function generateQuantityKeyboard(stock: number, showMaxButton: boolean = false)
             buttons.push(qtyButtons.slice(i, i + 3));
         }
 
-        buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_PLANS)]);
+        buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CAPCUT14DAYS_GO_BACK_TO_PLANS)]);
     } else {
         // Stock > 5
         if (showMaxButton) {
@@ -58,42 +58,42 @@ function generateQuantityKeyboard(stock: number, showMaxButton: boolean = false)
             buttons.push([
                 Markup.button.callback(
                     `✅ Mua ${stock} (tối đa)`,
-                    CALLBACK_ACTIONS.CAPCUT_QTY_MAX
+                    CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_MAX
                 ),
             ]);
 
             // Show only 1 and 2 for quick selection
             const quickButtons = [];
-            if (stock >= 1) quickButtons.push(Markup.button.callback('1', `${CALLBACK_ACTIONS.CAPCUT_QTY_PREFIX}1`));
-            if (stock >= 2) quickButtons.push(Markup.button.callback('2', `${CALLBACK_ACTIONS.CAPCUT_QTY_PREFIX}2`));
+            if (stock >= 1) quickButtons.push(Markup.button.callback('1', `${CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_PREFIX}1`));
+            if (stock >= 2) quickButtons.push(Markup.button.callback('2', `${CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_PREFIX}2`));
             if (quickButtons.length > 0) {
                 buttons.push(quickButtons);
             }
 
-            buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_PLANS)]);
+            buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CAPCUT14DAYS_GO_BACK_TO_PLANS)]);
         } else {
             // Normal flow: show [1..5] + [Nhập số khác] + [Mua tối đa] + [Quay lại]
             buttons.push([
-                Markup.button.callback('1', `${CALLBACK_ACTIONS.CAPCUT_QTY_PREFIX}1`),
-                Markup.button.callback('2', `${CALLBACK_ACTIONS.CAPCUT_QTY_PREFIX}2`),
-                Markup.button.callback('3', `${CALLBACK_ACTIONS.CAPCUT_QTY_PREFIX}3`),
+                Markup.button.callback('1', `${CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_PREFIX}1`),
+                Markup.button.callback('2', `${CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_PREFIX}2`),
+                Markup.button.callback('3', `${CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_PREFIX}3`),
             ]);
             buttons.push([
-                Markup.button.callback('4', `${CALLBACK_ACTIONS.CAPCUT_QTY_PREFIX}4`),
-                Markup.button.callback('5', `${CALLBACK_ACTIONS.CAPCUT_QTY_PREFIX}5`),
+                Markup.button.callback('4', `${CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_PREFIX}4`),
+                Markup.button.callback('5', `${CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_PREFIX}5`),
             ]);
             buttons.push([
-                Markup.button.callback('✏️ Nhập số khác', CALLBACK_ACTIONS.CAPCUT_QTY_CUSTOM),
-                Markup.button.callback(`✅ Mua ${stock} (tối đa)`, CALLBACK_ACTIONS.CAPCUT_QTY_MAX),
+                Markup.button.callback('✏️ Nhập số khác', CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_CUSTOM),
+                Markup.button.callback(`✅ Mua ${stock} (tối đa)`, CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_MAX),
             ]);
-            buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_PLANS)]);
+            buttons.push([Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CAPCUT14DAYS_GO_BACK_TO_PLANS)]);
         }
     }
 
     return Markup.inlineKeyboard(buttons);
 }
 
-export async function handleCapcutSelect(ctx: Context) {
+export async function handleCapcut14dSelect(ctx: Context) {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -122,7 +122,7 @@ export async function handleCapcutSelect(ctx: Context) {
     }
 
     // Show plan selection
-    const product = await productRepository.findByCode(PRODUCT_CODES.CAPCUT);
+    const product = await productRepository.findByCode(PRODUCT_CODES.CAPCUT14DAYS);
     if (!product) {
         await ctx.reply('❌ Sản phẩm không khả dụng.');
         return;
@@ -132,33 +132,24 @@ export async function handleCapcutSelect(ctx: Context) {
     const buttons = variants.map((v) =>
         Markup.button.callback(
             `${v.name} - ${formatCurrency(v.priceVnd)}`,
-            `${CALLBACK_ACTIONS.CAPCUT_PLAN_PREFIX}${v.code}`
+            `${CALLBACK_ACTIONS.CAPCUT14DAYS_PLAN_PREFIX}${v.code}`
         )
     );
 
     // Add back button
-    buttons.push(Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_MAIN));
+    buttons.push(Markup.button.callback('↩️ Quay lại', CALLBACK_ACTIONS.CAPCUT14DAYS_GO_BACK_TO_MAIN));
 
     const keyboard = Markup.inlineKeyboard(buttons, { columns: 1 });
 
     userSessions.set(userId, { step: 'select_plan' });
 
-    await ctx.reply(
-        `✂️ *CapCut Pro 1 Tuần – Bảo hành full*
-
-        • Định dạng tài khoản: *Mail | Pass*
-        • Sử dụng được *2–3 thiết bị*
-        • Trong quá trình sử dụng *lỗi 1 đổi 1*
-
-        👉 Vui lòng chọn gói bên dưới`,
-        {
-            parse_mode: 'Markdown',
-            ...keyboard,
-        }
-    );
+    await ctx.reply('🎬 *Capcut14d Pro 1 Tuần (Bảo hành full)*\n\nVui lòng chọn gói:', {
+        parse_mode: 'Markdown',
+        ...keyboard,
+    });
 }
 
-export async function handleCapcutPlanSelect(ctx: Context, variantCode: string) {
+export async function handleCapcut14dPlanSelect(ctx: Context, variantCode: string) {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -169,7 +160,7 @@ export async function handleCapcutPlanSelect(ctx: Context, variantCode: string) 
     }
 
     // ⭐ Check stock availability
-    const product = await productRepository.findByCode(PRODUCT_CODES.CAPCUT);
+    const product = await productRepository.findByCode(PRODUCT_CODES.CAPCUT14DAYS);
     if (!product) {
         await ctx.reply('❌ Sản phẩm không khả dụng.');
         return;
@@ -203,7 +194,7 @@ export async function handleCapcutPlanSelect(ctx: Context, variantCode: string) 
     });
 }
 
-export async function handleCapcutQuantitySelect(ctx: Context, quantity: number, isFromTextInput: boolean = false) {
+export async function handleCapcut14dQuantitySelect(ctx: Context, quantity: number, isFromTextInput: boolean = false) {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -220,7 +211,7 @@ export async function handleCapcutQuantitySelect(ctx: Context, quantity: number,
         // Show insufficient stock message
         const keyboard = generateQuantityKeyboard(currentStock, true); // true = show max button prominently
 
-        const message = BOT_MESSAGES.CAPCUT_INSUFFICIENT_STOCK(quantity, currentStock);
+        const message = BOT_MESSAGES.CAPCUT14DAYS_INSUFFICIENT_STOCK(quantity, currentStock);
 
         if (isFromTextInput) {
             await ctx.reply(message, {
@@ -237,13 +228,13 @@ export async function handleCapcutQuantitySelect(ctx: Context, quantity: number,
     }
 
     // Continue with order creation
-    await createCapcutOrder(ctx, quantity, session, isFromTextInput);
+    await createCapcut14dOrder(ctx, quantity, session, isFromTextInput);
 }
 
 /**
  * Handle "Mua tối đa" button - buy max available stock
  */
-export async function handleCapcutQuantityMax(ctx: Context) {
+export async function handleCapcut14dQuantityMax(ctx: Context) {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -261,13 +252,13 @@ export async function handleCapcutQuantityMax(ctx: Context) {
     }
 
     await ctx.answerCbQuery(`✅ Mua ${maxStock} tài khoản`);
-    await createCapcutOrder(ctx, maxStock, session);
+    await createCapcut14dOrder(ctx, maxStock, session);
 }
 
 /**
  * Handle custom quantity input from text message
  */
-export async function handleCapcutQuantityCustom(ctx: Context) {
+export async function handleCapcut14dQuantityCustom(ctx: Context) {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -289,7 +280,7 @@ export async function handleCapcutQuantityCustom(ctx: Context) {
 /**
  * Handle text input for custom quantity
  */
-export async function handleCapcutQuantityInput(ctx: Context, text: string) {
+export async function handleCapcut14dQuantityInput(ctx: Context, text: string) {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -299,7 +290,7 @@ export async function handleCapcutQuantityInput(ctx: Context, text: string) {
     }
 
     const currentStock = session.currentStock || 0;
-    const maxAllowed = Math.min(currentStock, LIMITS.CAPCUT_QTY_MAX);
+    const maxAllowed = Math.min(currentStock, LIMITS.CAPCUT14DAYS_QTY_MAX);
 
     // ⭐ Validate input
     const qty = parseInt(text, 10);
@@ -308,7 +299,7 @@ export async function handleCapcutQuantityInput(ctx: Context, text: string) {
         // Not a number - use reply instead of edit
         const keyboard = generateQuantityKeyboard(currentStock, false);
         await ctx.reply(
-            BOT_MESSAGES.CAPCUT_INVALID_QUANTITY(LIMITS.CAPCUT_QTY_MIN, maxAllowed),
+            BOT_MESSAGES.CAPCUT14DAYS_INVALID_QUANTITY(LIMITS.CAPCUT14DAYS_QTY_MIN, maxAllowed),
             {
                 parse_mode: 'Markdown',
                 ...keyboard,
@@ -317,11 +308,11 @@ export async function handleCapcutQuantityInput(ctx: Context, text: string) {
         return;
     }
 
-    if (qty < LIMITS.CAPCUT_QTY_MIN || qty > LIMITS.CAPCUT_QTY_MAX) {
+    if (qty < LIMITS.CAPCUT14DAYS_QTY_MIN || qty > LIMITS.CAPCUT14DAYS_QTY_MAX) {
         // Out of general bounds - use reply instead of edit
         const keyboard = generateQuantityKeyboard(currentStock, false);
         await ctx.reply(
-            BOT_MESSAGES.CAPCUT_INVALID_QUANTITY(LIMITS.CAPCUT_QTY_MIN, LIMITS.CAPCUT_QTY_MAX),
+            BOT_MESSAGES.CAPCUT14DAYS_INVALID_QUANTITY(LIMITS.CAPCUT14DAYS_QTY_MIN, LIMITS.CAPCUT14DAYS_QTY_MAX),
             {
                 parse_mode: 'Markdown',
                 ...keyboard,
@@ -334,7 +325,7 @@ export async function handleCapcutQuantityInput(ctx: Context, text: string) {
         // Exceeds current stock - use reply instead of edit
         const keyboard = generateQuantityKeyboard(currentStock, true); // Show max button
         await ctx.reply(
-            BOT_MESSAGES.CAPCUT_INSUFFICIENT_STOCK(qty, currentStock),
+            BOT_MESSAGES.CAPCUT14DAYS_INSUFFICIENT_STOCK(qty, currentStock),
             {
                 parse_mode: 'Markdown',
                 ...keyboard,
@@ -344,13 +335,13 @@ export async function handleCapcutQuantityInput(ctx: Context, text: string) {
     }
 
     // Valid quantity - create order
-    await handleCapcutQuantitySelect(ctx, qty, true); // true = from text input
+    await handleCapcut14dQuantitySelect(ctx, qty, true); // true = from text input
 }
 
 /**
  * Handle "Quay lại" button - go back to main menu
  */
-export async function handleCapcutGoBackToMain(ctx: Context) {
+export async function handleCapcut14dGoBackToMain(ctx: Context) {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -367,18 +358,18 @@ export async function handleCapcutGoBackToMain(ctx: Context) {
 /**
  * Handle "Quay lại" button - go back to plan selection
  */
-export async function handleCapcutGoBackToPlans(ctx: Context) {
+export async function handleCapcut14dGoBackToPlans(ctx: Context) {
     const userId = ctx.from?.id;
     if (!userId) return;
 
     await ctx.answerCbQuery('↩️ Quay lại');
-    await handleCapcutSelect(ctx);
+    await handleCapcut14dSelect(ctx);
 }
 
 /**
- * Create Capcut order after validation
+ * Create Capcut14d order after validation
  */
-async function createCapcutOrder(ctx: Context, quantity: number, session: CapcutSession, isFromTextInput: boolean = false) {
+async function createCapcut14dOrder(ctx: Context, quantity: number, session: Capcut14dSession, isFromTextInput: boolean = false) {
     const userId = ctx.from?.id;
     if (!userId) return;
 
@@ -387,7 +378,7 @@ async function createCapcutOrder(ctx: Context, quantity: number, session: Capcut
         const order = await orderService.createOrder({
             userId: BigInt(userId),
             username: ctx.from?.username,
-            productCode: PRODUCT_CODES.CAPCUT,
+            productCode: PRODUCT_CODES.CAPCUT14DAYS,
             variantCode: session.variantCode,
             quantity,
         });
@@ -444,9 +435,9 @@ async function createCapcutOrder(ctx: Context, quantity: number, session: Capcut
             userId,
             quantity,
             qrMessageId: sentMessage.message_id
-        }, 'Capcut order created, QR sent with messageId saved');
+        }, 'Capcut14d order created, QR sent with messageId saved');
     } catch (error) {
-        logger.error({ error, userId, quantity }, 'Failed to create Capcut order');
+        logger.error({ error, userId, quantity }, 'Failed to create Capcut14d order');
 
         if (error instanceof Error && error.message === 'USER_HAS_ACTIVE_ORDER') {
             // Get active order details
@@ -486,7 +477,7 @@ async function createCapcutOrder(ctx: Context, quantity: number, session: Capcut
             }
 
             // Refresh and show quantity selection again
-            await handleCapcutPlanSelect(ctx, session.variantCode!);
+            await handleCapcut14dPlanSelect(ctx, session.variantCode!);
         } else {
             const errorMessage = '❌ Đã xảy ra lỗi. Vui lòng thử lại sau.';
 

@@ -38,6 +38,28 @@ import {
 } from './handlers/capcut.handler';
 
 import {
+    handleCapcut14dSelect,
+    handleCapcut14dPlanSelect,
+    handleCapcut14dQuantitySelect,
+    handleCapcut14dQuantityCustom,
+    handleCapcut14dQuantityInput,
+    handleCapcut14dQuantityMax,
+    handleCapcut14dGoBackToMain,
+    handleCapcut14dGoBackToPlans,
+} from './handlers/capcut14days.handler';
+
+import {
+    handleCapcutTeamSelect,
+    handleCapcutTeamPlanSelect,
+    handleCapcutTeamQuantitySelect,
+    handleCapcutTeamQuantityCustom,
+    handleCapcutTeamQuantityInput,
+    handleCapcutTeamQuantityMax,
+    handleCapcutTeamGoBackToMain,
+    handleCapcutTeamGoBackToPlans,
+} from './handlers/capcutteam.handler';
+
+import {
     handleChatGPTSelect,
     handleChatGPTPlanSelect,
     handleChatGPTQuantitySelect,
@@ -103,6 +125,8 @@ export function createBot(): Telegraf {
     bot.action(CALLBACK_ACTIONS.SELECT_CANVA, handleCanvaSelect);
     bot.action(CALLBACK_ACTIONS.SELECT_NETFLIX, handleNetflixSelect);
     bot.action(CALLBACK_ACTIONS.SELECT_CAPCUT, handleCapcutSelect);
+    bot.action(CALLBACK_ACTIONS.SELECT_CAPCUT14DAYS, handleCapcut14dSelect);
+    bot.action(CALLBACK_ACTIONS.SELECT_CAPCUTTEAM, handleCapcutTeamSelect);
     bot.action(CALLBACK_ACTIONS.SELECT_CHATGPT, handleChatGPTSelect);
     bot.action(CALLBACK_ACTIONS.SELECT_GMAIL, handleGmailSelect);
     bot.action(CALLBACK_ACTIONS.SELECT_VEO3, handleVeo3Select);
@@ -156,6 +180,36 @@ export function createBot(): Telegraf {
     bot.action(CALLBACK_ACTIONS.CAPCUT_QTY_MAX, handleCapcutQuantityMax);
     bot.action(CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_MAIN, handleCapcutGoBackToMain);
     bot.action(CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_PLANS, handleCapcutGoBackToPlans);
+
+    // Capcut 14 Days flow callbacks
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.CAPCUT14DAYS_PLAN_PREFIX}(.+)$`), (ctx) => {
+        const variantCode = ctx.match[1];
+        return handleCapcut14dPlanSelect(ctx, variantCode);
+    });
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_PREFIX}(\\d+)$`), (ctx) => {
+        const quantity = parseInt(ctx.match[1], 10);
+        return handleCapcut14dQuantitySelect(ctx, quantity);
+    });
+    bot.action(CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_CUSTOM, handleCapcut14dQuantityCustom);
+    bot.action(CALLBACK_ACTIONS.CAPCUT14DAYS_QTY_MAX, handleCapcut14dQuantityMax);
+    bot.action(CALLBACK_ACTIONS.CAPCUT14DAYS_GO_BACK_TO_MAIN, handleCapcut14dGoBackToMain);
+    bot.action(CALLBACK_ACTIONS.CAPCUT14DAYS_GO_BACK_TO_PLANS, handleCapcut14dGoBackToPlans);
+
+    // Capcut Team flow callbacks
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.CAPCUTTEAM_PLAN_PREFIX}(.+)$`), (ctx) => {
+        const variantCode = ctx.match[1];
+        return handleCapcutTeamPlanSelect(ctx, variantCode);
+    });
+
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.CAPCUTTEAM_QTY_PREFIX}(\\d+)$`), (ctx) => {
+        const quantity = parseInt(ctx.match[1], 10);
+        return handleCapcutTeamQuantitySelect(ctx, quantity);
+    });
+
+    bot.action(CALLBACK_ACTIONS.CAPCUTTEAM_QTY_CUSTOM, handleCapcutTeamQuantityCustom);
+    bot.action(CALLBACK_ACTIONS.CAPCUTTEAM_QTY_MAX, handleCapcutTeamQuantityMax);
+    bot.action(CALLBACK_ACTIONS.CAPCUTTEAM_GO_BACK_TO_MAIN, handleCapcutTeamGoBackToMain);
+    bot.action(CALLBACK_ACTIONS.CAPCUTTEAM_GO_BACK_TO_PLANS, handleCapcutTeamGoBackToPlans);
 
     // ChatGPT flow callbacks
     bot.action(new RegExp(`^${CALLBACK_ACTIONS.CHATGPT_PLAN_PREFIX}(.+)$`), (ctx) => {
@@ -256,6 +310,12 @@ export function createBot(): Telegraf {
 
         // Try Capcut quantity input
         await handleCapcutQuantityInput(ctx, text);
+
+        // Try Capcut 14 days quantity input
+        await handleCapcut14dQuantityInput(ctx, text);
+
+        // Try Capcut Team quantity input
+        await handleCapcutTeamQuantityInput(ctx, text);
 
         // Try ChatGPT quantity input
         await handleChatGPTQuantityInput(ctx, text);

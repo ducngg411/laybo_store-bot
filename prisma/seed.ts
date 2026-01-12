@@ -145,6 +145,112 @@ async function main() {
 
     console.log(`✅ Created ${capcutInventory.length} Capcut inventory items`);
 
+    // Create Capcut Pro 14 ngày product
+    const capcutPro14Product = await prisma.product.upsert({
+        where: { code: 'CAPCUT_PRO_14' },
+        update: {},
+        create: {
+            code: 'CAPCUT_PRO_14',
+            name: 'Capcut Pro 14 ngày',
+            type: ProductType.DIGITAL_GOOD,
+            isActive: true,
+        },
+    });
+
+    // Create Capcut Pro 14 ngày variants
+    const capcutPro14Variants = [
+        { code: 'CAPCUT_PRO_14D', name: 'Capcut Pro 14 ngày', durationMonths: 0.5, priceVnd: 10000 },
+    ];
+
+    for (const variant of capcutPro14Variants) {
+        await prisma.variant.upsert({
+            where: { code: variant.code },
+            update: {},
+            create: {
+                ...variant,
+                productId: capcutPro14Product.id,
+                isActive: true,
+            },
+        });
+    }
+
+    console.log(`✅ Created Capcut Pro 14 ngày product with ${capcutPro14Variants.length} variants`);
+
+    // Create 30 Capcut Pro 14 ngày inventory accounts
+    const capcutPro14Inventory = [];
+    for (let i = 1; i <= 30; i++) {
+        capcutPro14Inventory.push({
+            username: `capcutpro14_account${i}@example.com`,
+            password: `CapcutPro14Pass${i}${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+            expiryDate: '14 ngày',
+        });
+    }
+
+    for (const item of capcutPro14Inventory) {
+        await prisma.inventoryItem.create({
+            data: {
+                productId: capcutPro14Product.id,
+                payload: item,
+                status: 'AVAILABLE',
+            },
+        });
+    }
+
+    console.log(`✅ Created ${capcutPro14Inventory.length} Capcut Pro 14 ngày inventory items`);
+
+    // Create Capcut Pro Team 1 tháng product
+    const capcutProTeamProduct = await prisma.product.upsert({
+        where: { code: 'CAPCUT_TEAM' },
+        update: {},
+        create: {
+            code: 'CAPCUT_TEAM',
+            name: 'Capcut Pro Team 1 tháng',
+            type: ProductType.DIGITAL_GOOD,
+            isActive: true,
+        },
+    });
+
+    // Create Capcut Pro Team variants
+    const capcutProTeamVariants = [
+        { code: 'CAPCUT_TEAM_1M', name: 'Capcut Pro Team 1 tháng', durationMonths: 1, priceVnd: 15000 },
+    ];
+
+    for (const variant of capcutProTeamVariants) {
+        await prisma.variant.upsert({
+            where: { code: variant.code },
+            update: {},
+            create: {
+                ...variant,
+                productId: capcutProTeamProduct.id,
+                isActive: true,
+            },
+        });
+    }
+
+    console.log(`✅ Created Capcut Pro Team product with ${capcutProTeamVariants.length} variants`);
+
+    // Create 30 Capcut Pro Team inventory accounts
+    const capcutProTeamInventory = [];
+    for (let i = 1; i <= 30; i++) {
+        capcutProTeamInventory.push({
+            username: `capcutteam_account${i}@example.com`,
+            password: `CapcutTeamPass${i}${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+            expiryDate: '1 tháng',
+        });
+    }
+
+    for (const item of capcutProTeamInventory) {
+        await prisma.inventoryItem.create({
+            data: {
+                productId: capcutProTeamProduct.id,
+                payload: item,
+                status: 'AVAILABLE',
+            },
+        });
+    }
+
+    console.log(`✅ Created ${capcutProTeamInventory.length} Capcut Pro Team inventory items`);
+
     // Create ChatGPT product
     const chatGPTProduct = await prisma.product.upsert({
         where: { code: 'CHATGPT' },

@@ -2,6 +2,8 @@ export const PRODUCT_CODES = {
     CANVA: 'CANVA',
     NETFLIX: 'NETFLIX',
     CAPCUT: 'CAPCUT',
+    CAPCUT14DAYS: 'CAPCUT14DAYS',
+    CAPCUTTEAM: 'CAPCUTTEAM',
     CHATGPT: 'CHATGPT',
     GMAIL: 'GMAIL',
     VEO3: 'VEO3',
@@ -17,6 +19,8 @@ export const VARIANT_CODES = {
     CHATGPT_1M: 'CHATGPT_1M',
     GMAIL_15Min: 'GMAIL_15Min',
     VEO3_45K: 'VEO3_45K',
+    CAPCUT14DAYS_14D: 'CAPCUT14DAYS_14D',
+    CAPCUTTEAM_1M: 'CAPCUTTEAM_1M',
 } as const;
 
 export const ORDER_STATUSES = {
@@ -49,6 +53,8 @@ export const CALLBACK_ACTIONS = {
     SELECT_CANVA: 'select_canva',
     SELECT_NETFLIX: 'select_netflix',
     SELECT_CAPCUT: 'select_capcut',
+    SELECT_CAPCUT14DAYS: 'select_capcut14days',
+    SELECT_CAPCUTTEAM: 'select_capcutteam',
     SELECT_CHATGPT: 'select_chatgpt',
     SELECT_GMAIL: 'select_gmail',
     SELECT_VEO3: 'select_veo3',
@@ -78,6 +84,22 @@ export const CALLBACK_ACTIONS = {
     CAPCUT_QTY_MAX: 'capcut_qty_max', // ⭐ NEW: Mua tối đa
     CAPCUT_GO_BACK_TO_MAIN: 'capcut_back_main', // ⭐ Quay lại menu chính
     CAPCUT_GO_BACK_TO_PLANS: 'capcut_back_plans', //
+
+    // Capcut Pro 14 days flow
+    CAPCUT14DAYS_PLAN_PREFIX: 'capcut14days_plan_',
+    CAPCUT14DAYS_QTY_PREFIX: 'capcut14days_qty_',
+    CAPCUT14DAYS_QTY_CUSTOM: 'capcut14days_qty_custom',
+    CAPCUT14DAYS_QTY_MAX: 'capcut14days_qty_max', // ⭐ NEW: Mua tối đa
+    CAPCUT14DAYS_GO_BACK_TO_MAIN: 'capcut14days_back_main', // ⭐ Quay lại menu chính
+    CAPCUT14DAYS_GO_BACK_TO_PLANS: 'capcut14days_back_plans', //
+
+    // Capcut Team flow
+    CAPCUTTEAM_PLAN_PREFIX: 'capcutteam_plan_',
+    CAPCUTTEAM_QTY_PREFIX: 'capcutteam_qty_',
+    CAPCUTTEAM_QTY_CUSTOM: 'capcutteam_qty_custom',
+    CAPCUTTEAM_QTY_MAX: 'capcutteam_qty_max', // ⭐ NEW: Mua tối đa
+    CAPCUTTEAM_GO_BACK_TO_MAIN: 'capcutteam_back_main', // ⭐ Quay lại menu chính
+    CAPCUTTEAM_GO_BACK_TO_PLANS: 'capcutteam_back_plans', //
 
     // ChatGPT flow
     CHATGPT_PLAN_PREFIX: 'chatgpt_plan_',
@@ -201,6 +223,52 @@ export const BOT_MESSAGES = {
         `⚠️ *Số lượng không hợp lệ.*\n\n` +
         `Vui lòng nhập số từ *${min}* đến *${max}*.`,
 
+    // Capcut 14 days
+    CAPCUT14DAYS_DELIVERED: (accounts: Array<{ username: string; password: string; expiryDate: string }>) => {
+        let msg = '🎉 *Đơn hàng Capcut Pro 14 Days đã hoàn thành!*\n\n'
+        accounts.forEach((acc, idx) => {
+            msg += `📺 *Tài khoản ${idx + 1}:*\n`;
+            msg += `👤 Username: \`${acc.username}\`\n`;
+            msg += `🔑 Password: \`${acc.password}\`\n`;
+            msg += `⏰ Hạn dùng: ${acc.expiryDate}\n\n`;
+        });
+        msg += '💡 Nhấn vào để copy, hoặc dùng nút bên dưới.';
+        return msg;
+    },
+    // ⭐ NEW: Insufficient stock messages
+    CAPCUT14DAYS_INSUFFICIENT_STOCK: (requestedQty: number, availableQty: number) =>
+        `⚠️ *Không đủ hàng*\n\n` +
+        `🎬 Capcut Pro 14 Days hiện còn: *${availableQty} tài khoản*.\n` +
+        `Bạn vừa chọn: *${requestedQty}*.\n\n` +
+        `Vui lòng chọn số lượng mới:`,
+
+    CAPCUT14DAYS_INVALID_QUANTITY: (min: number, max: number) =>
+        `⚠️ *Số lượng không hợp lệ.*\n\n` +
+        `Vui lòng nhập số từ *${min}* đến *${max}*.`,
+
+    // Cacpcut Team
+    CAPCUTTEAM_DELIVERED: (accounts: Array<{ username: string; password: string; expiryDate: string }>) => {
+        let msg = '🎉 *Đơn hàng Capcut Pro Team đã hoàn thành!*\n\n'
+        accounts.forEach((acc, idx) => {
+            msg += `📺 *Tài khoản ${idx + 1}:*\n`;
+            msg += `👤 Username: \`${acc.username}\`\n`;
+            msg += `🔑 Password: \`${acc.password}\`\n`;
+            msg += `⏰ Hạn dùng: ${acc.expiryDate}\n\n`;
+        });
+        msg += '💡 Nhấn vào để copy, hoặc dùng nút bên dưới.';
+        return msg;
+    },
+    // ⭐ NEW: Insufficient stock messages
+    CAPCUTTEAM_INSUFFICIENT_STOCK: (requestedQty: number, availableQty: number) =>
+        `⚠️ *Không đủ hàng*\n\n` +
+        `🎬 Capcut Pro Team hiện còn: *${availableQty} tài khoản*.\n` +
+        `Bạn vừa chọn: *${requestedQty}*.\n\n` +
+        `Vui lòng chọn số lượng mới:`,
+
+    CAPCUTTEAM_INVALID_QUANTITY: (min: number, max: number) =>
+        `⚠️ *Số lượng không hợp lệ.*\n\n` +
+        `Vui lòng nhập số từ *${min}* đến *${max}*.`,
+
     // ChatGPT
     CHATGPT_DELIVERED: (accounts: Array<{ username: string; password: string; expiryDate: string }>) => {
         let msg = '🎉 *Đơn hàng ChatGPT đã hoàn thành!*\n\n';
@@ -287,4 +355,8 @@ export const LIMITS = {
     GMAIL_QTY_MAX: 100,
     VEO3_QTY_MIN: 1,
     VEO3_QTY_MAX: 100,
+    CAPCUTTEAM_QTY_MIN: 1,
+    CAPCUTTEAM_QTY_MAX: 100,
+    CAPCUT14DAYS_QTY_MIN: 1,
+    CAPCUT14DAYS_QTY_MAX: 100,
 } as const;
