@@ -90,6 +90,28 @@ export class InventoryRepository {
             },
         });
     }
+
+    async countReserved(productId: string): Promise<number> {
+        return prisma.inventoryItem.count({
+            where: {
+                productId,
+                status: InventoryStatus.RESERVED,
+            },
+        });
+    }
+
+    async countSold(productId: string): Promise<number> {
+        return prisma.inventoryItem.count({
+            where: {
+                productId,
+                status: InventoryStatus.SOLD,
+            },
+        });
+    }
+
+    async create(data: Prisma.InventoryItemCreateInput): Promise<InventoryItem> {
+        return prisma.inventoryItem.create({ data });
+    }
 }
 
 export const inventoryRepository = new InventoryRepository();

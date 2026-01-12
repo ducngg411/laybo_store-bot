@@ -20,6 +20,12 @@ export class ProductRepository {
         });
     }
 
+    async findAll(): Promise<Product[]> {
+        return prisma.product.findMany({
+            orderBy: { createdAt: 'asc' },
+        });
+    }
+
     async findById(id: string): Promise<Product | null> {
         return prisma.product.findUnique({
             where: { id },

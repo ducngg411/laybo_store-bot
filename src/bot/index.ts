@@ -81,12 +81,23 @@ import {
     handleBackToMain,
 } from './handlers/order.handler';
 
+import {
+    handleAdminCommand,
+    handleAdminUploadInventory,
+    handleAdminSelectProduct,
+    handleAdminInventoryInput,
+    handleAdminConfirmUpload,
+    handleAdminUploadCancel,
+    handleAdminViewStats,
+} from './handlers/admin.handler';
+
 export function createBot(): Telegraf {
     const bot = new Telegraf(config.bot.token);
 
     // Commands
     bot.command(BOT_COMMANDS.START, handleStart);
     bot.command(BOT_COMMANDS.HELP, handleSupport);
+    bot.command(BOT_COMMANDS.ADMIN, handleAdminCommand);
 
     // Main menu callbacks
     bot.action(CALLBACK_ACTIONS.SELECT_CANVA, handleCanvaSelect);
@@ -201,6 +212,20 @@ export function createBot(): Telegraf {
     bot.action(CALLBACK_ACTIONS.BACK_TO_MAIN, handleBackToMain);
 
     // Admin callbacks
+    bot.action(CALLBACK_ACTIONS.ADMIN_UPLOAD_INVENTORY, handleAdminUploadInventory);
+    bot.action(CALLBACK_ACTIONS.ADMIN_VIEW_STATS, handleAdminViewStats);
+    bot.action(CALLBACK_ACTIONS.ADMIN_UPLOAD_CANCEL, handleAdminUploadCancel);
+
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.ADMIN_SELECT_PRODUCT}(.+)$`), (ctx) => {
+        const productCode = ctx.match[1];
+        return handleAdminSelectProduct(ctx, productCode);
+    });
+
+    bot.action(new RegExp(`^confirm_upload_(.+)$`), (ctx) => {
+        const productCode = ctx.match[1];
+        return handleAdminConfirmUpload(ctx, productCode);
+    });
+
     bot.action(new RegExp(`^${CALLBACK_ACTIONS.ADMIN_IN_PROGRESS}(.+)$`), (ctx) => {
         const orderId = ctx.match[1];
         return handleAdminInProgress(ctx, orderId);
@@ -219,6 +244,9 @@ export function createBot(): Telegraf {
     // Text message handler (for email input and custom quantity)
     bot.on('text', async (ctx) => {
         const text = ctx.message.text;
+
+        // Try admin inventory upload
+        await handleAdminInventoryInput(ctx, text);
 
         // Try Canva email input
         await handleCanvaEmailInput(ctx, text);

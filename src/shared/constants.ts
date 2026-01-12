@@ -41,6 +41,7 @@ export const BOT_COMMANDS = {
     START: 'start',
     HELP: 'help',
     CANCEL: 'cancel',
+    ADMIN: 'admin',
 } as const;
 
 export const CALLBACK_ACTIONS = {
@@ -113,6 +114,12 @@ export const CALLBACK_ACTIONS = {
     ADMIN_IN_PROGRESS: 'admin_in_progress_',
     ADMIN_FULFILLED: 'admin_fulfilled_',
     ADMIN_FAILED: 'admin_failed_',
+
+    // Admin menu
+    ADMIN_UPLOAD_INVENTORY: 'admin_upload_inventory',
+    ADMIN_VIEW_STATS: 'admin_view_stats',
+    ADMIN_SELECT_PRODUCT: 'admin_select_product_',
+    ADMIN_UPLOAD_CANCEL: 'admin_upload_cancel',
 
     // Copy actions (Netflix)
     COPY_USERNAME: 'copy_username_',

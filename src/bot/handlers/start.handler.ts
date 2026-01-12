@@ -45,19 +45,19 @@ export async function handleStart(ctx: Context) {
         ],
         [
             Markup.button.callback(
-                `🎬 TÀI KHOẢN NETFLIX EXTRAL 4K • 40K/1${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
+                `🎬 NETFLIX EXTRAL 4K • 40K/1${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_NETFLIX
             ),
         ],
         [
             Markup.button.callback(
-                `✂️ TÀI KHOẢN CAPCUT PRO 1 TUẦN • 5K/1${capcutCount > 0 ? ` (Còn ${capcutCount})` : ' (Hết hàng)'}`,
+                `✂️ CAPCUT PRO 1 TUẦN • 5K/1${capcutCount > 0 ? ` (Còn ${capcutCount})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_CAPCUT
             ),
         ],
         [
             Markup.button.callback(
-                `🤖 TÀI KHOẢN CHATGPT PLUS 1 THÁNG • 20K/1${chatGPTCount > 0 ? ` (Còn ${chatGPTCount})` : ' (Hết hàng)'}`,
+                `🤖 CHATGPT PLUS 1 THÁNG • 20K/1${chatGPTCount > 0 ? ` (Còn ${chatGPTCount})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_CHATGPT
             ),
         ],
@@ -69,7 +69,7 @@ export async function handleStart(ctx: Context) {
         ],
         [
             Markup.button.callback(
-                `📹 TÀI KHOẢN VEO3 UTRAL 45K CREDITS • 35K/1${veo3Count > 0 ? ` (Còn ${veo3Count})` : ' (Hết hàng)'}`,
+                `📹 VEO3 UTRAL 45K CREDITS • 35K/1${veo3Count > 0 ? ` (Còn ${veo3Count})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_VEO3
             ),
         ],
@@ -132,19 +132,19 @@ export async function handleRefreshInventory(ctx: Context) {
         ],
         [
             Markup.button.callback(
-                `🎬 TÀI KHOẢN NETFLIX EXTRAL 4K • 40K/1${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
+                `🎬 NETFLIX EXTRAL 4K • 40K/1${netflixCount > 0 ? ` (Còn ${netflixCount})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_NETFLIX
             ),
         ],
         [
             Markup.button.callback(
-                `✂️ TÀI KHOẢN CAPCUT PRO 1 TUẦN • 5K/1${capcutCount > 0 ? ` (Còn ${capcutCount})` : ' (Hết hàng)'}`,
+                `✂️ CAPCUT PRO 1 TUẦN • 5K/1${capcutCount > 0 ? ` (Còn ${capcutCount})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_CAPCUT
             ),
         ],
         [
             Markup.button.callback(
-                `🤖 TÀI KHOẢN CHATGPT PLUS 1 THÁNG • 20K/1${chatGPTCount > 0 ? ` (Còn ${chatGPTCount})` : ' (Hết hàng)'}`,
+                `🤖 CHATGPT PLUS 1 THÁNG • 20K/1${chatGPTCount > 0 ? ` (Còn ${chatGPTCount})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_CHATGPT
             ),
         ],
@@ -156,7 +156,7 @@ export async function handleRefreshInventory(ctx: Context) {
         ],
         [
             Markup.button.callback(
-                `📹 TÀI KHOẢN VEO3 UTRAL 45K CREDITS • 35K/1${veo3Count > 0 ? ` (Còn ${veo3Count})` : ' (Hết hàng)'}`,
+                `📹 VEO3 UTRAL 45K CREDITS • 35K/1${veo3Count > 0 ? ` (Còn ${veo3Count})` : ' (Hết hàng)'}`,
                 CALLBACK_ACTIONS.SELECT_VEO3
             ),
         ],

@@ -7,6 +7,7 @@ const envSchema = z.object({
     BOT_TOKEN: z.string().min(1, 'BOT_TOKEN is required'),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
     ADMIN_CHAT_ID: z.string().min(1, 'ADMIN_CHAT_ID is required'),
+    ADMIN_USER_ID: z.string().default('1673823142'), // Admin user ID for permission check
     SEPAY_WEBHOOK_SECRET: z.string().optional(),
     SEPAY_ACCOUNT_NUMBER: z.string().default('0123456789'),
     SEPAY_ACCOUNT_NAME: z.string().default('NGUYEN VAN A'),
@@ -29,6 +30,7 @@ export const config = {
     bot: {
         token: parsed.data.BOT_TOKEN,
         adminChatId: parsed.data.ADMIN_CHAT_ID,
+        adminUserId: parsed.data.ADMIN_USER_ID,
     },
     database: {
         url: parsed.data.DATABASE_URL,
