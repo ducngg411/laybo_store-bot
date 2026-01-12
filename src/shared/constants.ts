@@ -2,6 +2,9 @@ export const PRODUCT_CODES = {
     CANVA: 'CANVA',
     NETFLIX: 'NETFLIX',
     CAPCUT: 'CAPCUT',
+    CHATGPT: 'CHATGPT',
+    GMAIL: 'GMAIL',
+    VEO3: 'VEO3',
 } as const;
 
 export const VARIANT_CODES = {
@@ -11,6 +14,9 @@ export const VARIANT_CODES = {
     CANVA_12M: 'CANVA_12M',
     NETFLIX_1M: 'NETFLIX_1M',
     CAPCUT_1W: 'CAPCUT_1W',
+    CHATGPT_1M: 'CHATGPT_1M',
+    GMAIL_15Min: 'GMAIL_15Min',
+    VEO3_45K: 'VEO3_45K',
 } as const;
 
 export const ORDER_STATUSES = {
@@ -42,6 +48,9 @@ export const CALLBACK_ACTIONS = {
     SELECT_CANVA: 'select_canva',
     SELECT_NETFLIX: 'select_netflix',
     SELECT_CAPCUT: 'select_capcut',
+    SELECT_CHATGPT: 'select_chatgpt',
+    SELECT_GMAIL: 'select_gmail',
+    SELECT_VEO3: 'select_veo3',
     SUPPORT: 'support',
     REFRESH_INVENTORY: 'refresh_inventory',
 
@@ -68,6 +77,30 @@ export const CALLBACK_ACTIONS = {
     CAPCUT_QTY_MAX: 'capcut_qty_max', // ⭐ NEW: Mua tối đa
     CAPCUT_GO_BACK_TO_MAIN: 'capcut_back_main', // ⭐ Quay lại menu chính
     CAPCUT_GO_BACK_TO_PLANS: 'capcut_back_plans', //
+
+    // ChatGPT flow
+    CHATGPT_PLAN_PREFIX: 'chatgpt_plan_',
+    CHATGPT_QTY_PREFIX: 'chatgpt_qty_',
+    CHATGPT_QTY_CUSTOM: 'chatgpt_qty_custom',
+    CHATGPT_QTY_MAX: 'chatgpt_qty_max', // ⭐ NEW: Mua tối đa
+    CHATGPT_GO_BACK_TO_MAIN: 'chatgpt_back_main', // ⭐ Quay lại menu chính
+    CHATGPT_GO_BACK_TO_PLANS: 'chatgpt_back_plans', //
+
+    // Gmail flow
+    GMAIL_PLAN_PREFIX: 'gmail_plan_',
+    GMAIL_QTY_PREFIX: 'gmail_qty_',
+    GMAIL_QTY_CUSTOM: 'gmail_qty_custom',
+    GMAIL_QTY_MAX: 'gmail_qty_max', // ⭐ NEW: Mua tối đa
+    GMAIL_GO_BACK_TO_MAIN: 'gmail_back_main', // ⭐ Quay lại menu chính
+    GMAIL_GO_BACK_TO_PLANS: 'gmail_back_plans', //
+
+    // Veo3 flow
+    VEO3_PLAN_PREFIX: 'veo3_plan_',
+    VEO3_QTY_PREFIX: 'veo3_qty_',
+    VEO3_QTY_CUSTOM: 'veo3_qty_custom',
+    VEO3_QTY_MAX: 'veo3_qty_max', // ⭐ NEW: Mua tối đa
+    VEO3_GO_BACK_TO_MAIN: 'veo3_back_main', // ⭐ Quay lại menu chính
+    VEO3_GO_BACK_TO_PLANS: 'veo3_back_plans', //
 
     // Order actions
     VIEW_QR: 'view_qr',
@@ -160,6 +193,78 @@ export const BOT_MESSAGES = {
     CAPCUT_INVALID_QUANTITY: (min: number, max: number) =>
         `⚠️ *Số lượng không hợp lệ.*\n\n` +
         `Vui lòng nhập số từ *${min}* đến *${max}*.`,
+
+    // ChatGPT
+    CHATGPT_DELIVERED: (accounts: Array<{ username: string; password: string; expiryDate: string }>) => {
+        let msg = '🎉 *Đơn hàng ChatGPT đã hoàn thành!*\n\n';
+        accounts.forEach((acc, idx) => {
+            msg += `📺 *Tài khoản ${idx + 1}:*\n`;
+            msg += `👤 Username: \`${acc.username}\`\n`;
+            msg += `🔑 Password: \`${acc.password}\`\n`;
+            msg += `⏰ Hạn dùng: ${acc.expiryDate}\n\n`;
+        });
+        msg += '💡 Nhấn vào để copy, hoặc dùng nút bên dưới.';
+        return msg;
+    },
+
+    // ⭐ NEW: Insufficient stock messages
+    CHATGPT_INSUFFICIENT_STOCK: (requestedQty: number, availableQty: number) =>
+        `⚠️ *Không đủ hàng*\n\n` +
+        `🎬 ChatGPT Plus hiện còn: *${availableQty} tài khoản*.\n` +
+        `Bạn vừa chọn: *${requestedQty}*.\n\n` +
+        `Vui lòng chọn số lượng mới:`,
+
+    CHATGPT_INVALID_QUANTITY: (min: number, max: number) =>
+        `⚠️ *Số lượng không hợp lệ.*\n\n` +
+        `Vui lòng nhập số từ *${min}* đến *${max}*.`,
+
+    // Gmail
+    GMAIL_DELIVERED: (accounts: Array<{ username: string; password: string; expiryDate: string }>) => {
+        let msg = '🎉 *Đơn hàng Gmail đã hoàn thành!*\n\n';
+        accounts.forEach((acc, idx) => {
+            msg += `📺 *Tài khoản ${idx + 1}:*\n`;
+            msg += `👤 Username: \`${acc.username}\`\n`;
+            msg += `🔑 Password: \`${acc.password}\`\n`;
+            msg += `⏰ Hạn dùng: ${acc.expiryDate}\n\n`;
+        });
+        msg += '💡 Nhấn vào để copy, hoặc dùng nút bên dưới.';
+        return msg;
+    },
+
+    // ⭐ NEW: Insufficient stock messages
+    GMAIL_INSUFFICIENT_STOCK: (requestedQty: number, availableQty: number) =>
+        `⚠️ *Không đủ hàng*\n\n` +
+        `🎬 Gmail Inapp CHPLAY hiện còn: *${availableQty} tài khoản*.\n` +
+        `Bạn vừa chọn: *${requestedQty}*.\n\n` +
+        `Vui lòng chọn số lượng mới:`,
+
+    GMAIL_INVALID_QUANTITY: (min: number, max: number) =>
+        `⚠️ *Số lượng không hợp lệ.*\n\n` +
+        `Vui lòng nhập số từ *${min}* đến *${max}*.`,
+
+    // Veo3
+    VEO3_DELIVERED: (accounts: Array<{ username: string; password: string; expiryDate: string }>) => {
+        let msg = '🎉 *Đơn hàng Veo3 đã hoàn thành!*\n\n'
+        accounts.forEach((acc, idx) => {
+            msg += `📺 *Tài khoản ${idx + 1}:*\n`;
+            msg += `👤 Username: \`${acc.username}\`\n`;
+            msg += `🔑 Password: \`${acc.password}\`\n`;
+            msg += `⏰ Hạn dùng: ${acc.expiryDate}\n\n`;
+        });
+        msg += '💡 Nhấn vào để copy, hoặc dùng nút bên dưới.';
+        return msg;
+    },
+    // ⭐ NEW: Insufficient stock messages
+    VEO3_INSUFFICIENT_STOCK: (requestedQty: number, availableQty: number) =>
+        `⚠️ *Không đủ hàng*\n\n` +
+        `🎬 Veo3 hiện còn: *${availableQty} tài khoản*.\n` +
+        `Bạn vừa chọn: *${requestedQty}*.\n\n` +
+        `Vui lòng chọn số lượng mới:`,
+
+    VEO3_INVALID_QUANTITY: (min: number, max: number) =>
+        `⚠️ *Số lượng không hợp lệ.*\n\n` +
+        `Vui lòng nhập số từ *${min}* đến *${max}*.`,
+
 } as const;
 
 export const LIMITS = {
@@ -169,4 +274,10 @@ export const LIMITS = {
     NETFLIX_QTY_MAX: 100,
     CAPCUT_QTY_MIN: 1,
     CAPCUT_QTY_MAX: 100,
+    CHATGPT_QTY_MIN: 1,
+    CHATGPT_QTY_MAX: 100,
+    GMAIL_QTY_MIN: 1,
+    GMAIL_QTY_MAX: 100,
+    VEO3_QTY_MIN: 1,
+    VEO3_QTY_MAX: 100,
 } as const;

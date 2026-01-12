@@ -38,6 +38,39 @@ import {
 } from './handlers/capcut.handler';
 
 import {
+    handleChatGPTSelect,
+    handleChatGPTPlanSelect,
+    handleChatGPTQuantitySelect,
+    handleChatGPTQuantityCustom,
+    handleChatGPTQuantityInput,
+    handleChatGPTQuantityMax,
+    handleChatGPTGoBackToMain,
+    handleChatGPTGoBackToPlans,
+} from './handlers/chatgpt.handler';
+
+import {
+    handleGmailSelect,
+    handleGmailPlanSelect,
+    handleGmailQuantitySelect,
+    handleGmailQuantityCustom,
+    handleGmailQuantityInput,
+    handleGmailQuantityMax,
+    handleGmailGoBackToMain,
+    handleGmailGoBackToPlans,
+} from './handlers/gmail.handler';
+
+import {
+    handleVeo3Select,
+    handleVeo3PlanSelect,
+    handleVeo3QuantitySelect,
+    handleVeo3QuantityCustom,
+    handleVeo3QuantityInput,
+    handleVeo3QuantityMax,
+    handleVeo3GoBackToMain,
+    handleVeo3GoBackToPlans,
+} from './handlers/veo3.handler';
+
+import {
     handleCancelOrder,
     handleViewQR,
     handleConfirmPayment,
@@ -59,6 +92,9 @@ export function createBot(): Telegraf {
     bot.action(CALLBACK_ACTIONS.SELECT_CANVA, handleCanvaSelect);
     bot.action(CALLBACK_ACTIONS.SELECT_NETFLIX, handleNetflixSelect);
     bot.action(CALLBACK_ACTIONS.SELECT_CAPCUT, handleCapcutSelect);
+    bot.action(CALLBACK_ACTIONS.SELECT_CHATGPT, handleChatGPTSelect);
+    bot.action(CALLBACK_ACTIONS.SELECT_GMAIL, handleGmailSelect);
+    bot.action(CALLBACK_ACTIONS.SELECT_VEO3, handleVeo3Select);
     bot.action(CALLBACK_ACTIONS.SUPPORT, handleSupport);
     bot.action(CALLBACK_ACTIONS.REFRESH_INVENTORY, handleRefreshInventory);
 
@@ -110,6 +146,53 @@ export function createBot(): Telegraf {
     bot.action(CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_MAIN, handleCapcutGoBackToMain);
     bot.action(CALLBACK_ACTIONS.CAPCUT_GO_BACK_TO_PLANS, handleCapcutGoBackToPlans);
 
+    // ChatGPT flow callbacks
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.CHATGPT_PLAN_PREFIX}(.+)$`), (ctx) => {
+        const variantCode = ctx.match[1];
+        return handleChatGPTPlanSelect(ctx, variantCode);
+    });
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.CHATGPT_QTY_PREFIX}(\\d+)$`), (ctx) => {
+        const quantity = parseInt(ctx.match[1], 10);
+        return handleChatGPTQuantitySelect(ctx, quantity);
+    });
+
+    bot.action(CALLBACK_ACTIONS.CHATGPT_QTY_CUSTOM, handleChatGPTQuantityCustom);
+    bot.action(CALLBACK_ACTIONS.CHATGPT_QTY_MAX, handleChatGPTQuantityMax);
+    bot.action(CALLBACK_ACTIONS.CHATGPT_GO_BACK_TO_MAIN, handleChatGPTGoBackToMain);
+    bot.action(CALLBACK_ACTIONS.CHATGPT_GO_BACK_TO_PLANS, handleChatGPTGoBackToPlans);
+
+    // Gmail flow callbacks
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.GMAIL_PLAN_PREFIX}(.+)$`), (ctx) => {
+        const variantCode = ctx.match[1];
+        return handleGmailPlanSelect(ctx, variantCode);
+    });
+
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.GMAIL_QTY_PREFIX}(\\d+)$`), (ctx) => {
+        const quantity = parseInt(ctx.match[1], 10);
+        return handleGmailQuantitySelect(ctx, quantity);
+    });
+
+    // Veo3 flow callbacks
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.VEO3_PLAN_PREFIX}(.+)$`), (ctx) => {
+        const variantCode = ctx.match[1];
+        return handleVeo3PlanSelect(ctx, variantCode);
+    });
+
+    bot.action(new RegExp(`^${CALLBACK_ACTIONS.VEO3_QTY_PREFIX}(\\d+)$`), (ctx) => {
+        const quantity = parseInt(ctx.match[1], 10);
+        return handleVeo3QuantitySelect(ctx, quantity);
+    });
+
+    bot.action(CALLBACK_ACTIONS.VEO3_QTY_CUSTOM, handleVeo3QuantityCustom);
+    bot.action(CALLBACK_ACTIONS.VEO3_QTY_MAX, handleVeo3QuantityMax);
+    bot.action(CALLBACK_ACTIONS.VEO3_GO_BACK_TO_MAIN, handleVeo3GoBackToMain);
+    bot.action(CALLBACK_ACTIONS.VEO3_GO_BACK_TO_PLANS, handleVeo3GoBackToPlans);
+
+    bot.action(CALLBACK_ACTIONS.GMAIL_QTY_CUSTOM, handleGmailQuantityCustom);
+    bot.action(CALLBACK_ACTIONS.GMAIL_QTY_MAX, handleGmailQuantityMax);
+    bot.action(CALLBACK_ACTIONS.GMAIL_GO_BACK_TO_MAIN, handleGmailGoBackToMain);
+    bot.action(CALLBACK_ACTIONS.GMAIL_GO_BACK_TO_PLANS, handleGmailGoBackToPlans);
+
     // Order actions
     bot.action(CALLBACK_ACTIONS.VIEW_QR, handleViewQR);
     bot.action(CALLBACK_ACTIONS.CANCEL_ORDER, handleCancelOrder);
@@ -145,6 +228,15 @@ export function createBot(): Telegraf {
 
         // Try Capcut quantity input
         await handleCapcutQuantityInput(ctx, text);
+
+        // Try ChatGPT quantity input
+        await handleChatGPTQuantityInput(ctx, text);
+
+        // Try Gmail quantity input
+        await handleGmailQuantityInput(ctx, text);
+
+        // Try Veo3 quantity input
+        await handleVeo3QuantityInput(ctx, text);
     });
 
     // Error handling
