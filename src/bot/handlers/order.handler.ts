@@ -285,6 +285,109 @@ export async function deliverNetflixAccounts(bot: Telegraf, userId: bigint, orde
     }
 }
 
+export async function deliverCapcutAccounts(bot: Telegraf, userId: bigint, orderId: string) {
+    try {
+        const items = await inventoryService.getOrderItems(orderId);
+
+        if (items.length === 0) {
+            logger.error({ orderId }, 'No inventory items found for Capcut order');
+            return;
+        }
+
+        const accounts = items.map((item) => inventoryService.parseItemPayload(item));
+
+        const keyboard = Markup.inlineKeyboard([
+            [
+                Markup.button.callback('🛒 Mua thêm', CALLBACK_ACTIONS.BUY_MORE),
+                Markup.button.callback('🏠 Menu chính', CALLBACK_ACTIONS.BACK_TO_MAIN),
+            ],
+            [Markup.button.callback('☎️ Hỗ trợ', CALLBACK_ACTIONS.SUPPORT)],
+        ]);
+
+        await bot.telegram.sendMessage(
+            userId.toString(),
+            BOT_MESSAGES.CAPCUT_DELIVERED(accounts),
+            { parse_mode: 'Markdown', ...keyboard }
+        );
+
+        // Update order status to FULFILLED
+        await orderService.updateOrderStatus(orderId, OrderStatus.FULFILLED);
+
+        logger.info({ userId, orderId, count: accounts.length }, 'Capcut accounts delivered and order fulfilled');
+    } catch (error) {
+        logger.error({ error, userId, orderId }, 'Failed to deliver Capcut accounts');
+    }
+}
+
+export async function deliverCapcut14DaysAccounts(bot: Telegraf, userId: bigint, orderId: string) {
+    try {
+        const items = await inventoryService.getOrderItems(orderId);
+
+        if (items.length === 0) {
+            logger.error({ orderId }, 'No inventory items found for Capcut 14 days order');
+            return;
+        }
+
+        const accounts = items.map((item) => inventoryService.parseItemPayload(item));
+
+        const keyboard = Markup.inlineKeyboard([
+            [
+                Markup.button.callback('🛒 Mua thêm', CALLBACK_ACTIONS.BUY_MORE),
+                Markup.button.callback('🏠 Menu chính', CALLBACK_ACTIONS.BACK_TO_MAIN),
+            ],
+            [Markup.button.callback('☎️ Hỗ trợ', CALLBACK_ACTIONS.SUPPORT)],
+        ]);
+
+        await bot.telegram.sendMessage(
+            userId.toString(),
+            BOT_MESSAGES.CAPCUT14DAYS_DELIVERED(accounts),
+            { parse_mode: 'Markdown', ...keyboard }
+        );
+
+        // Update order status to FULFILLED
+        await orderService.updateOrderStatus(orderId, OrderStatus.FULFILLED);
+
+        logger.info({ userId, orderId, count: accounts.length }, 'Capcut 14 days accounts delivered and order fulfilled');
+    } catch (error) {
+        logger.error({ error, userId, orderId }, 'Failed to deliver Capcut 14 days accounts');
+    }
+}
+
+export async function deliverCapcutTeamAccounts(bot: Telegraf, userId: bigint, orderId: string) {
+    try {
+        const items = await inventoryService.getOrderItems(orderId);
+
+        if (items.length === 0) {
+            logger.error({ orderId }, 'No inventory items found for Capcut Team order');
+            return;
+        }
+
+        const accounts = items.map((item) => inventoryService.parseItemPayload(item));
+
+        const keyboard = Markup.inlineKeyboard([
+            [
+                Markup.button.callback('🛒 Mua thêm', CALLBACK_ACTIONS.BUY_MORE),
+                Markup.button.callback('🏠 Menu chính', CALLBACK_ACTIONS.BACK_TO_MAIN),
+            ],
+            [Markup.button.callback('☎️ Hỗ trợ', CALLBACK_ACTIONS.SUPPORT)],
+        ]);
+
+        await bot.telegram.sendMessage(
+            userId.toString(),
+            BOT_MESSAGES.CAPCUTTEAM_DELIVERED(accounts),
+            { parse_mode: 'Markdown', ...keyboard }
+        );
+
+        // Update order status to FULFILLED
+        await orderService.updateOrderStatus(orderId, OrderStatus.FULFILLED);
+
+        logger.info({ userId, orderId, count: accounts.length }, 'Capcut Team accounts delivered and order fulfilled');
+    } catch (error) {
+        logger.error({ error, userId, orderId }, 'Failed to deliver Capcut Team accounts');
+    }
+}
+
+
 export async function handleAdminInProgress(ctx: Context, orderId: string) {
     try {
         await orderService.updateOrderStatus(orderId, OrderStatus.IN_PROGRESS);
@@ -328,6 +431,9 @@ export async function handleAdminFulfilled(ctx: Context, bot: Telegraf, orderId:
         } else {
             // Netflix order - deliver accounts
             await deliverNetflixAccounts(bot, order.userId, orderId);
+            await deliverCapcutAccounts(bot, order.userId, orderId);
+            await deliverCapcut14DaysAccounts(bot, order.userId, orderId);
+            await deliverCapcutTeamAccounts(bot, order.userId, orderId);
         }
 
         await ctx.answerCbQuery('✅ Đã hoàn thành đơn hàng');
