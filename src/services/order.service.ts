@@ -208,6 +208,28 @@ export class OrderService {
         logger.info({ orderId, status }, 'Order status updated');
     }
 
+    /**
+     * Update order metadata (e.g., to save QR messageId)
+     */
+    async updateOrderMetadata(orderId: string, metadata: Record<string, unknown>): Promise<void> {
+        await orderRepository.update(orderId, {
+            metadata: metadata as any,
+        });
+        logger.debug({ orderId, metadata }, 'Order metadata updated');
+    }
+
+    /**
+     * Get expired orders (for notification before marking as expired)
+     */
+    async getExpiredOrders(): Promise<Array<{ id: string; userId: bigint; metadata: unknown }>> {
+        const orders = await orderRepository.findExpired();
+        return orders.map(order => ({
+            id: order.id,
+            userId: order.userId,
+            metadata: order.metadata,
+        }));
+    }
+
     async processExpiredOrders(): Promise<number> {
         const expiredOrders = await orderRepository.findExpired();
 

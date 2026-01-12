@@ -179,7 +179,8 @@ export async function handleNetflixQuantitySelect(ctx: Context, quantity: number
             { parse_mode: 'Markdown' }
         );
 
-        await ctx.replyWithPhoto(
+        // Send QR and save messageId
+        const sentMessage = await ctx.replyWithPhoto(
             { url: qrUrl },
             {
                 caption: `📱 Quét mã QR để thanh toán\n💰 Số tiền: *${formatCurrency(order.totalVnd)}*\n🔖 Nội dung: \`${order.paymentRef}\``,
@@ -188,7 +189,18 @@ export async function handleNetflixQuantitySelect(ctx: Context, quantity: number
             }
         );
 
-        logger.info({ orderId: order.id, userId }, 'Netflix order created, QR sent');
+        // Save QR messageId to order metadata for expiry notification
+        if (sentMessage.message_id) {
+            await orderService.updateOrderMetadata(order.id, {
+                qrMessageId: sentMessage.message_id,
+            });
+        }
+
+        logger.info({
+            orderId: order.id,
+            userId,
+            qrMessageId: sentMessage.message_id
+        }, 'Netflix order created, QR sent with messageId saved');
     } catch (error) {
         logger.error({ error }, 'Failed to create Netflix order');
 

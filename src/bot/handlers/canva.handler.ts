@@ -215,7 +215,8 @@ export async function handleCanvaEmailInput(ctx: Context, text: string) {
             [Markup.button.callback('✅ Tôi đã thanh toán', CALLBACK_ACTIONS.CONFIRM_PAYMENT)],
         ]);
 
-        await ctx.replyWithPhoto(
+        // Send QR and save messageId
+        const sentMessage = await ctx.replyWithPhoto(
             { url: qrUrl },
             {
                 caption:
@@ -231,7 +232,19 @@ export async function handleCanvaEmailInput(ctx: Context, text: string) {
             }
         );
 
-        logger.info({ orderId: order.id, userId }, 'Canva order created, QR sent');
+        // Save QR messageId to order metadata for expiry notification
+        if (sentMessage.message_id) {
+            await orderService.updateOrderMetadata(order.id, {
+                ...order.metadata,
+                qrMessageId: sentMessage.message_id,
+            });
+        }
+
+        logger.info({
+            orderId: order.id,
+            userId,
+            qrMessageId: sentMessage.message_id
+        }, 'Canva order created, QR sent with messageId saved');
     } catch (error) {
         if (error instanceof Error && error.message === 'USER_HAS_ACTIVE_ORDER') {
             // Get active order details

@@ -80,8 +80,13 @@ export const BOT_MESSAGES = {
         'Bạn có thể tạo đơn mới bất cứ lúc nào.\n\n' +
         '👉 Gõ /start để mua lại\n' +
         '📩 Cần hỗ trợ? Liên hệ admin @ducngg411',
-    ORDER_EXPIRED: (orderId: string) =>
-        `⏰ Đơn hàng *#${orderId}* đã hết hạn thanh toán.\n\nVui lòng tạo đơn mới nếu bạn vẫn muốn mua.`,
+
+    ORDER_EXPIRED_MESSAGE: '⏰ *Đơn hàng này đã hết hạn thanh toán*',
+    ORDER_EXPIRED_NOTIFICATION:
+        '⏰ *Đơn hàng đã hết hạn*\n\n' +
+        'Đơn hàng của bạn đã quá thời gian thanh toán.\n\n' +
+        '👉 Gõ /start để tạo đơn mới\n' +
+        '📩 Cần hỗ trợ? Liên hệ admin @ducngg411',
 
     PAYMENT_SUCCESS: '✅ *Thanh toán thành công!*\n\nĐang xử lý đơn hàng của bạn. Vui lòng đợi 2-3 phút.\n\n⏳ Nếu sau 15 phút chưa nhận được phản hồi, vui lòng liên hệ admin @ducngg411',
 

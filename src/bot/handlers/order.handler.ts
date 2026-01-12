@@ -132,13 +132,60 @@ export async function handleConfirmPayment(ctx: Context) {
     );
 }
 
-export async function notifyUserOrderExpired(bot: Telegraf, userId: bigint, orderId: string) {
+/**
+ * Notify user when order expires
+ * - Edits QR message to show "Order Expired"
+ * - Sends notification message
+ */
+export async function notifyUserOrderExpired(bot: Telegraf, userId: bigint, orderId: string, qrMessageId?: number) {
     try {
+        // Step 1: Edit QR message if we have messageId
+        if (qrMessageId) {
+            try {
+                // Try editing caption first (for photo messages)
+                await bot.telegram.editMessageCaption(
+                    userId.toString(),
+                    qrMessageId,
+                    undefined,
+                    BOT_MESSAGES.ORDER_EXPIRED_MESSAGE,
+                    {
+                        parse_mode: 'Markdown',
+                    }
+                );
+                logger.debug({ userId, orderId, qrMessageId }, 'Edited QR message caption on expiry');
+            } catch (error) {
+                // If caption edit fails, try text edit (for text messages)
+                try {
+                    await bot.telegram.editMessageText(
+                        userId.toString(),
+                        qrMessageId,
+                        undefined,
+                        BOT_MESSAGES.ORDER_EXPIRED_MESSAGE,
+                        {
+                            parse_mode: 'Markdown',
+                        }
+                    );
+                    logger.debug({ userId, orderId, qrMessageId }, 'Edited QR message text on expiry');
+                } catch (error2) {
+                    // Message might be too old or deleted - not critical
+                    logger.debug(
+                        { error: error2, userId, orderId, qrMessageId },
+                        'Could not edit QR message on expiry (not critical)'
+                    );
+                }
+            }
+        } else {
+            logger.debug({ userId, orderId }, 'No QR messageId found to edit');
+        }
+
+        // Step 2: Send notification message
         await bot.telegram.sendMessage(
             userId.toString(),
-            BOT_MESSAGES.ORDER_EXPIRED(orderId),
+            BOT_MESSAGES.ORDER_EXPIRED_NOTIFICATION,
             { parse_mode: 'Markdown' }
         );
+
+        logger.info({ userId, orderId }, 'Order expiry notification sent');
     } catch (error) {
         logger.error({ error, userId, orderId }, 'Failed to notify user about expired order');
     }
