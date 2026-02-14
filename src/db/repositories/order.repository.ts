@@ -87,6 +87,21 @@ export class OrderRepository {
             },
         });
     }
+
+    async findAllCompleted(): Promise<OrderWithRelations[]> {
+        return prisma.order.findMany({
+            where: {
+                status: {
+                    in: [OrderStatus.FULFILLED, OrderStatus.CANCELLED],
+                },
+            },
+            include: {
+                product: true,
+                variant: true,
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
 }
 
 export const orderRepository = new OrderRepository();

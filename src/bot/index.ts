@@ -5,6 +5,7 @@ import { CALLBACK_ACTIONS, BOT_COMMANDS } from '../shared/constants';
 
 // Import handlers
 import { handleStart, handleSupport, handleRefreshInventory } from './handlers/start.handler';
+import { handleInventoryCommand } from './handlers/inven.handler';
 import {
     handleCanvaSelect,
     handleCanvaPlanSelect,
@@ -120,6 +121,7 @@ export function createBot(): Telegraf {
     bot.command(BOT_COMMANDS.START, handleStart);
     bot.command(BOT_COMMANDS.HELP, handleSupport);
     bot.command(BOT_COMMANDS.ADMIN, handleAdminCommand);
+    bot.command('inven', handleInventoryCommand);
 
     // Main menu callbacks
     bot.action(CALLBACK_ACTIONS.SELECT_CANVA, handleCanvaSelect);

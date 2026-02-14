@@ -143,18 +143,20 @@ export async function handleNetflixSelect(ctx: Context) {
 
     userSessions.set(userId, { step: 'select_plan' });
 
-    await ctx.reply(
-        `🎬 *Netflix Premium – Bảo hành full*
-        • Định dạng tài khoản: *Mail | Pass*
-        • Tài khoản *Private* – dùng riêng, không chung
-        • Trong quá trình sử dụng *lỗi 1 đổi 1*
+    const text = [
+        '🎬 *Netflix Premium – Bảo hành full*',
+        '',
+        '• Định dạng tài khoản: *Mail | Pass*',
+        '• Tài khoản *Private* – dùng riêng, không chung',
+        '• Trong quá trình sử dụng *lỗi 1 đổi 1*',
+        '',
+        '👉 Vui lòng chọn gói bên dưới',
+    ].join('\n');
 
-        👉 Vui lòng chọn gói bên dưới`,
-        {
-            parse_mode: 'Markdown',
-            ...keyboard,
-        }
-    );
+    await ctx.reply(text, {
+        parse_mode: 'Markdown',
+        ...keyboard,
+    });
 }
 
 export async function handleNetflixPlanSelect(ctx: Context, variantCode: string) {

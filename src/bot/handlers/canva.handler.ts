@@ -72,19 +72,21 @@ export async function handleCanvaSelect(ctx: Context) {
 
     userSessions.set(userId, { step: 'select_plan' });
 
-    await ctx.reply(
-        `📦 *Canva Pro Teams – Bảo hành full*
-            • Gói Pro Teams cao cấp (*không phải Edu*)
-            • Mở khóa toàn bộ template & tài nguyên
-            • Canva AI: 3 lượt / tuần
-            • Resize, xóa phông, chỉnh sửa nâng cao
+    const text = [
+        '📦 *Canva Pro Teams – Bảo hành full*',
+        '',
+        '• Gói Pro Teams cao cấp (*không phải Edu*)',
+        '• Mở khóa toàn bộ template & tài nguyên',
+        '• Canva AI: 3 lượt / tuần',
+        '• Resize, xóa phông, chỉnh sửa nâng cao',
+        '',
+        '👉 Vui lòng chọn gói bên dưới',
+    ].join('\n');
 
-        👉 Vui lòng chọn gói bên dưới`,
-        {
-            parse_mode: 'Markdown',
-            ...keyboard,
-        }
-    );
+    await ctx.reply(text, {
+        parse_mode: 'Markdown',
+        ...keyboard,
+    });
 }
 
 export async function handleCanvaPlanSelect(ctx: Context, variantCode: string) {

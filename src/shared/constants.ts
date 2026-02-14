@@ -178,7 +178,7 @@ export const BOT_MESSAGES = {
 
     // Netflix
     NETFLIX_DELIVERED: (accounts: Array<{ username: string; password: string; expiryDate: string }>) => {
-        let msg = '🎉 *Đơn hàng Netflix đã hoàn thành!*\n\n';
+        let msg = '🎉 *Đơn hàng đã hoàn thành!*\n\n';
         accounts.forEach((acc, idx) => {
             msg += `📺 *Tài khoản ${idx + 1}:*\n`;
             msg += `👤 Username: \`${acc.username}\`\n`;

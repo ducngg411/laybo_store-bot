@@ -143,19 +143,20 @@ export async function handleCapcutSelect(ctx: Context) {
 
     userSessions.set(userId, { step: 'select_plan' });
 
-    await ctx.reply(
-        `✂️ *CapCut Pro 1 Tuần – Bảo hành full*
+    const text = [
+        '✂️ *CapCut Pro 1 Tuần – Bảo hành full*',
+        '',
+        '• Định dạng tài khoản: *Mail | Pass*',
+        '• Sử dụng được *2–3 thiết bị*',
+        '• Trong quá trình sử dụng *lỗi 1 đổi 1*',
+        '',
+        '👉 Vui lòng chọn gói bên dưới',
+    ].join('\n');
 
-        • Định dạng tài khoản: *Mail | Pass*
-        • Sử dụng được *2–3 thiết bị*
-        • Trong quá trình sử dụng *lỗi 1 đổi 1*
-
-        👉 Vui lòng chọn gói bên dưới`,
-        {
-            parse_mode: 'Markdown',
-            ...keyboard,
-        }
-    );
+    await ctx.reply(text, {
+        parse_mode: 'Markdown',
+        ...keyboard,
+    });
 }
 
 export async function handleCapcutPlanSelect(ctx: Context, variantCode: string) {
